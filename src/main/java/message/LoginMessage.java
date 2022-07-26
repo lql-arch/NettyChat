@@ -63,7 +63,6 @@ public class LoginMessage extends Message {
         String uid = sc.nextLine();
         System.out.println("请输入密码:");
         String pass = sc.nextLine();
-        System.out.println();
 
         return new LoginMessage(uid,pass,true);
     }

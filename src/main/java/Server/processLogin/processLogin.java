@@ -44,13 +44,15 @@ public class processLogin {
         msg.setUid(uid);
 
 
+        Date date ;
+
         PreparedStatement ps3 = con.prepareStatement("insert into user(uid,name,password,age,gander,build_time) values (?,?,?,?,?,?)");
         ps3.setObject(1,uid);
         ps3.setObject(2,uid);
         ps3.setObject(3,password);
         ps3.setObject(4,0);
-        ps3.setObject(5,msg.getGander());
-        ps3.setObject(6,msg.getDate());
+        ps3.setObject(5,"b");
+        ps3.setObject(6,date);
 
         boolean execute = ps3.execute();
         return !execute;
