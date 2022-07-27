@@ -95,9 +95,9 @@ public class Chat_group { //用户的群资料
     public void addAdministrator(String uid){
         this.administrator.add(uid);
     }
-    static class group_content{
+    private class group_content{
         private String text;
-        private String uid;
+        private String uid;//发送者
         private Date date;
         public group_content(String text,String uid){
             this.text = text;

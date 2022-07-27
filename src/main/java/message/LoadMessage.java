@@ -6,16 +6,25 @@ import java.util.List;
 public class LoadMessage extends Message{
 
     private String uid;
+    private String gid;
     private List<String> friends;
     private List<Chat_group> Group;
     private List<Chat_record> message;
     private Integer unread_message;
     private int age;
     private String name;
-    private String gender;
+    private String gander;
     private Date build_time;
+    private int status;//0:登录获取资料，1：好友聊天查询实时消息，2：群聊查询实时消息
 
-    public LoadMessage(){}
+    public LoadMessage(String id,int status){
+        this.status = status;
+        if(status == 0 || status == 1) {
+            this.uid = id;
+        }else if(status == 2){
+            this.gid = id;
+        }
+    }
     @Override
     public int getMessageType() {
         return LoadMessage;
@@ -24,6 +33,13 @@ public class LoadMessage extends Message{
     @Override
     public int getLength() {
         return 1;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+    public String getGid() {
+        return gid;
     }
 
     public List<String> getFriends() {
@@ -54,8 +70,12 @@ public class LoadMessage extends Message{
         return age;
     }
 
-    public String getGender() {
-        return gender;
+    public int getStatus() {
+        return status;
+    }
+
+    public String getGander() {
+        return gander;
     }
 
     public void setGroup(List<Chat_group> group) {
@@ -82,13 +102,16 @@ public class LoadMessage extends Message{
         this.build_time = build_time;
     }
 
-    public void setGender(String gender) {
-        this.gender = gender;
+    public void setGander(String gander) {
+        this.gander = gander;
     }
 
     public void setName(String name) {
         this.name = name;
     }
 
+    public void setStatus(int status) {
+        this.status = status;
+    }
 }
 
