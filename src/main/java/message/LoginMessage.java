@@ -10,7 +10,7 @@ public class LoginMessage extends Message {
     private String uid;
     private String pass;
     private String gander;
-    private Date build_time;
+    private String build_time;//Date
 
     private boolean isLogin;
 
@@ -23,6 +23,22 @@ public class LoginMessage extends Message {
     private LoginMessage(String pass) {//注册用
         this.pass = pass;
         this.isLogin = false;
+    }
+
+    public void setPass(String pass) {
+        this.pass = pass;
+    }
+
+    public void setBuild_time(String build_time) {
+        this.build_time = build_time;
+    }
+
+    public boolean isLogin() {
+        return isLogin;
+    }
+
+    public void setLogin(boolean login) {
+        isLogin = login;
     }
 
     public String getUid() {
@@ -41,16 +57,16 @@ public class LoginMessage extends Message {
         return gander;
     }
 
-    public Date getDate() {
-        return build_time;
+    public Date getTime() {
+        return Date.valueOf(build_time);
     }
 
     public void setGander(String gander) {
         this.gander = gander;
     }
 
-    public void setDate(Date build_time) {
-        this.build_time = build_time;
+    public void setTime(Date build_time) {
+        this.build_time = build_time.toString();
     }
 
     public void setUid(String uid) {

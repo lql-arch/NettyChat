@@ -12,7 +12,7 @@ public class ReviseMaterial {
     public static boolean revisePassword(ReviseMessage msg) throws SQLException {
         DbUtil db = DbUtil.getDb();
         Connection con = db.getConn();
-        PreparedStatement ps = con.prepareStatement("update user set password = ? where uid = ?");
+        PreparedStatement ps = con.prepareStatement("update members.user set password = ? where uid = ?");
         ps.setObject(1,msg.getPassword());
         ps.setObject(2,msg.getUid());
         boolean result = ps.execute();
@@ -22,7 +22,7 @@ public class ReviseMaterial {
     public static boolean reviseName(ReviseMessage msg) throws SQLException {
         DbUtil db = DbUtil.getDb();
         Connection con = db.getConn();
-        PreparedStatement ps = con.prepareStatement("update user set name = ? where uid = ?");
+        PreparedStatement ps = con.prepareStatement("update members.user set name = ? where uid = ?");
         ps.setObject(1,msg.getName());
         ps.setObject(2,msg.getUid());
         boolean result = ps.execute();
@@ -32,7 +32,7 @@ public class ReviseMaterial {
     public static boolean reviseAge(ReviseMessage msg) throws SQLException {
         DbUtil db = DbUtil.getDb();
         Connection con = db.getConn();
-        PreparedStatement ps = con.prepareStatement("update user set age = ? where uid = ?");
+        PreparedStatement ps = con.prepareStatement("update members.user set age = ? where uid = ?");
         ps.setObject(1,msg.getAge());
         ps.setObject(2,msg.getUid());
         boolean result = ps.execute();
@@ -42,7 +42,7 @@ public class ReviseMaterial {
     public static boolean reviseGander(ReviseMessage msg) throws SQLException {
         DbUtil db = DbUtil.getDb();
         Connection con = db.getConn();
-        PreparedStatement ps = con.prepareStatement("update user set gander = ? where uid = ?");
+        PreparedStatement ps = con.prepareStatement("update members.user set gander = ? where uid = ?");
         ps.setObject(1,msg.getGander());
         ps.setObject(2,msg.getUid());
         boolean result = ps.execute();
@@ -56,15 +56,7 @@ public class ReviseMaterial {
         PreparedStatement ps = con.prepareStatement("use members");
         ps.execute();
 
-        ps = con.prepareStatement("update user_text set status = false where status = true and time <= ? and send_uid = ? and recipient_uid = ?");
-        ps.setObject(1,msg.getTime());
-        ps.setObject(2,msg.getMyUid());
-        ps.setObject(3,msg.getFriendUid());
-        if(ps.execute()){
-            return false;
-        }
-
-        ps = con.prepareStatement("update user_text set status = false where status = true and time <= ? and send_uid = ? and recipient_uid = ?");
+        ps = con.prepareStatement("update members.user_text set status = false where status = true and time <= ? and send_uid = ? and recipient_uid = ?");
         ps.setObject(1,msg.getTime());
         ps.setObject(2,msg.getFriendUid());
         ps.setObject(3,msg.getMyUid());

@@ -6,10 +6,11 @@ import io.netty.channel.ChannelHandlerContext;
 import message.LoadMessage;
 import message.UserMessage;
 
+import java.io.IOException;
 import java.util.*;
 
 public class ChatSystem {
-    public synchronized static void friendSystem(LoadMessage load, ChannelHandlerContext ctx,UserMessage friend) throws InterruptedException {
+    public synchronized static void friendSystem(LoadMessage load, ChannelHandlerContext ctx,UserMessage friend) throws InterruptedException, IOException {
         List<String> friends = load.getFriends();
         Map<Integer,String> map = new HashMap<>();
         Iterator<String> iter = friends.iterator();
@@ -18,6 +19,8 @@ public class ChatSystem {
 
         while(true) {
             //分页未实现
+            System.out.println("-------------------------------------------");
+            System.out.println("------------    我的好友     ----------------");
             System.out.println("-------------------------------------------");
             while (iter.hasNext()) {
                 String name = iter.next();
@@ -36,7 +39,6 @@ public class ChatSystem {
                 }
                 if (!isDigit(choice)) {
                     System.err.println("输入错误。");
-                    continue;
                 } else {
                     String uid = map.get(Integer.getInteger(choice));
                     friendMaterial(uid,ctx,friend);
@@ -60,9 +62,16 @@ public class ChatSystem {
 
     }
 
-    private static void friendMaterial(String uid, ChannelHandlerContext ctx,UserMessage friend) throws InterruptedException {
+    private static void friendMaterial(String uid, ChannelHandlerContext ctx,UserMessage friend) throws InterruptedException, IOException {
+        String myUid = Start.uid;
+        ctx.channel().writeAndFlush(new UserMessage(myUid));
+//        Start.count.await();
+        Start.semaphore.acquire();
+        UserMessage me = friend;
+
         ctx.channel().writeAndFlush(new UserMessage(uid));
-        Start.count.await();
+//        Start.count.await();
+        Start.semaphore.acquire();
 
         boolean flag = false;
         String t = (Objects.equals(friend.getGander(), "n") ? "男" : (Objects.equals(friend.getGander(), "m") ? "女" : "未知"));
@@ -73,13 +82,16 @@ public class ChatSystem {
             System.out.println("性别:" + t);
             System.out.println("年龄:" + friend.getAge());
             System.out.println("用户创建时间:" + friend.getBuild_time());
-            System.out.println("----------------------------------------");
-            System.out.println("1.发送消息\t2.返回\t");
+            //好友状态
+            //System.out.println("用户状态:" + );
             while (!flag) {
+                System.out.println("----------------------------------------");
+                System.out.println("1.发送消息\t2.返回\t");
+                System.out.println("----------------------------------------");
                 char choice = (char) new Scanner(System.in).nextByte();
                 switch (choice) {
                     case 1:
-                        SendMessageSystem.sendFriend();
+                        SendMessageSystem.sendFriend(ctx,me,friend);
                         flag = true;
                         break;
                     case 2:
@@ -90,8 +102,10 @@ public class ChatSystem {
                 }
             }
         }
-
-
     }
 
+
+    public static void unreadMessage(){
+
+    }
 }

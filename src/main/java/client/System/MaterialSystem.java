@@ -6,18 +6,21 @@ import message.FindMessage;
 import message.LoadMessage;
 import message.ReviseMessage;
 import message.UserMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.Objects;
 import java.util.Scanner;
 
 public class MaterialSystem {
-    public static void myMaterial(LoadMessage load, ChannelHandlerContext ctx, UserMessage me) throws InterruptedException {
-        boolean flag = false;
-        String t = (Objects.equals(me.getGander(), "n") ? "男" : (Objects.equals(me.getGander(), "m") ? "女" : "未知"));
-
+    private  static final Logger log = LogManager.getLogger();
+    public static void myMaterial(LoadMessage load, ChannelHandlerContext ctx) throws InterruptedException {
         while(true) {
+            boolean flag = false;
             ctx.channel().writeAndFlush(new UserMessage(load.getUid()));
-            Start.count.await();
+//            Start.count.await();
+            Start.semaphore.acquire();
+            UserMessage me = Start.friend;
+            String t = me.getGander().startsWith("n") ? "男" : (me.getGander().startsWith( "m") ? "女" : "未知");
 
             System.out.println("---------------------------------------------------------");
             System.out.println("\tuid:" + me.getUid());
@@ -49,6 +52,7 @@ public class MaterialSystem {
                         break;
                     case 6:
                         flag = true;
+                        break;
                     default:
                         System.err.println("Error:无此选项,请重新输入.");
                         break;
@@ -64,7 +68,8 @@ public class MaterialSystem {
             System.out.println("请输入旧密码");
             String oldPassword = sc.nextLine();
             ctx.channel().writeAndFlush(new FindMessage(uid, oldPassword));
-            Start.count.await();
+//            Start.count.await();
+            Start.semaphore.acquire();
             if (Start.EnterPassword.get()){
                 break;
             }else{
@@ -75,7 +80,7 @@ public class MaterialSystem {
             System.out.println("请输入新密码");
             newPassword = sc.nextLine();
             System.out.println("请再次输入密码");
-            if (sc.nextLine().equals(newPassword)) {
+            if (sc.nextLine().compareTo(newPassword) != 0) {
                 System.err.println("两次密码不一致");
                 continue;
             }
@@ -83,7 +88,8 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,null,newPassword,null));
-                Start.count.await();
+//                Start.count.await();
+                Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 break;
@@ -101,7 +107,8 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,name,null,null));
-                Start.count.await();
+//                Start.count.await();
+                Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 break;
@@ -126,7 +133,8 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,null,null,gander));
-                Start.count.await();
+//                Start.count.await();
+                Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 break;
@@ -139,7 +147,12 @@ public class MaterialSystem {
         int age;
         while(true) {
             System.out.println("请输入年龄");
-            age = sc.nextInt();
+            String ageStr = sc.nextLine();
+            if(!ChatSystem.isDigit(ageStr)){
+                System.err.println("包含错误字符，请重新输入.");
+                continue;
+            }
+            age = Integer.parseInt(ageStr);
             if(age >= 150){
                 System.err.println("？？？");
                 continue;
@@ -148,11 +161,13 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,age));
-                Start.count.await();
+//                Start.count.await();
+                Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 break;
             }
         }
     }
+
 }

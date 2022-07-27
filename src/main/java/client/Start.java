@@ -1,21 +1,22 @@
 package client;
 
 import client.System.ChatSystem;
+import client.System.FindSystem;
+import client.System.MaterialSystem;
 import config.Decode;
 import config.Encode;
-import config.ProcotolFrameDecoder;
+import config.FrameDecoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import message.LoadMessage;
-import message.LoginMessage;
-import message.LoginStringMessage;
-import message.UserMessage;
+import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -26,10 +27,16 @@ public class Start {
     private LoginMessage login;
     private static AtomicBoolean flag = new AtomicBoolean(false);
     private static int unread_message = 0;
-    private LoadMessage load;
-    public volatile UserMessage friend;
-    //public static Semaphore semaphore = new Semaphore(1);
-    public static CountDownLatch count = new CountDownLatch(1);
+    private  LoadMessage load;
+    public static LoadMessage singleLoad;
+    public static LoadMessage groupLoad;
+    public static volatile UserMessage friend;
+    public static Semaphore semaphore = new Semaphore(0);
+//    public static CountDownLatch count = new CountDownLatch(1);
+    public static AtomicBoolean EnterPassword = new AtomicBoolean(true);
+    public static String uid ;
+    public static List<StringMessage> message = new ArrayList<>();
+    public static AtomicBoolean singleFlag = new AtomicBoolean(false);
 
     public void Begin() throws InterruptedException {
         Bootstrap boot = new Bootstrap();
@@ -43,7 +50,7 @@ public class Start {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
-                            ch.pipeline().addLast(new ProcotolFrameDecoder());
+                            ch.pipeline().addLast(new FrameDecoder());
 //                            ch.pipeline().addLast(new ChannelDuplexHandler() {
 //                                // 用来触发特殊事件
 //                                @Override
@@ -56,15 +63,13 @@ public class Start {
 //                                    }
 //                                }
 //                            });
-                            ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+
+                            ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginStringMessage>() {
                                 @Override
                                 public void channelActive(ChannelHandlerContext ctx) throws Exception {
                                     extracted(ctx);
                                     super.channelActive(ctx);
                                 }
-                            });
-
-                            ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginStringMessage>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, LoginStringMessage msg) throws Exception {
                                     String str = msg.getMessage();
@@ -79,6 +84,7 @@ public class Start {
                                     }
                                     if(str.startsWith("login success")){
                                         System.out.println("登录成功！");
+                                        uid = login.getUid();
                                         ctx.channel().writeAndFlush(new LoginStringMessage("start!"+login.getUid()));
                                     }
                                 }
@@ -95,15 +101,24 @@ public class Start {
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoadMessage>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, LoadMessage msg) throws Exception {
-                                    load = msg;
-                                    unread_message = msg.getUnread_message();
-                                    new Thread(() -> {
-                                        try {
-                                            main_menu(ctx);
-                                        } catch (Exception e) {
-                                            throw new RuntimeException(e);
-                                        }
-                                    }).start();
+                                    if(msg.getStatus() == 0) {
+                                        load = msg;
+                                        unread_message = msg.getUnread_message();
+                                        new Thread(() -> {
+                                            try {
+                                                main_menu(ctx);
+                                            } catch (Exception e) {
+//                                                System.err.println("main_menu exception end:"+e);
+                                                e.printStackTrace();
+                                            }
+                                        }).start();
+                                    }
+                                    if(msg.getStatus() == 1){
+                                        singleLoad = msg;
+                                    }
+                                    if(msg.getStatus() == 2){
+                                        groupLoad = msg;
+                                    }
                                 }
                             });
 
@@ -111,9 +126,61 @@ public class Start {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, UserMessage msg) throws Exception {
                                     friend = msg;
-                                    count.countDown();
+//                                    log.debug(friend.getUid());
+//                                    count.countDown();
+                                    semaphore.release();
                                 }
                             });
+
+                            ch.pipeline().addLast(new SimpleChannelInboundHandler<FindMessage>() {
+                                @Override
+                                protected void channelRead0(ChannelHandlerContext ctx, FindMessage msg) throws Exception {
+                                    EnterPassword.compareAndSet(EnterPassword.get(),msg.getResult());
+//                                    count.countDown();
+                                    semaphore.release();
+                                }
+                            });
+
+                            ch.pipeline().addLast(new SimpleChannelInboundHandler<ReviseMessage>() {
+                                @Override
+                                protected void channelRead0(ChannelHandlerContext ctx, ReviseMessage msg) throws Exception {
+                                    if(msg.getUid().equals(uid) && msg.isResult()){
+                                        System.out.println("修改成功！");
+                                    }else{
+                                        System.out.println("修改失败");
+                                    }
+                                    semaphore.release();
+//                                    count.countDown();
+                                }
+                            });
+                            ch.pipeline().addLast(new SimpleChannelInboundHandler<StringMessage>() {
+                                @Override
+                                protected void channelRead0(ChannelHandlerContext ctx, StringMessage msg) throws Exception {
+                                    if(!singleFlag.get())
+                                        message.add(msg);
+                                    else
+                                        System.out.println(msg.getMe().getName()+":"+msg.getMessage());
+                                }
+                            });
+                            ch.pipeline().addLast(new SimpleChannelInboundHandler<RequestMessage>() {
+                                @Override
+                                protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
+                                    if(msg.isFriend()){
+                                        System.err.println("你与目标已经是好友了！");
+                                    }else{
+                                        if(msg.isConfirm()){
+                                            //确认是否添加好友，不添加将confirm改为false
+                                            ctx.writeAndFlush(msg);
+                                        }else{
+                                            //将好友信息添加到目前的好友队列中
+                                            String addName = load.getName().equals(msg.getRequestPerson().getName()) ? msg.getRecipientPerson().getName() : msg.getRequestPerson().getName();
+                                            load.addFriend(addName);
+                                            System.err.println("好友添加成功");
+                                        }
+                                    }
+                                }
+                            });
+
                         }
                     }).connect("127.0.0.1", 8100);
 
@@ -129,14 +196,12 @@ public class Start {
     }
 
     private  void extracted(ChannelHandlerContext ctx) throws Exception {
-        synchronized (this) {
             System.out.println("\t----------------------------------\t");
             System.out.println("\t---------       1.登录     --------\t");
             System.out.println("\t--------- 2.快速登录(已弃用) --------\t");
             System.out.println("\t---------       3.注册     --------\t");
             System.out.println("\t---------       4.退出     --------\t");
             System.out.println("\t-----------------------------------\t");
-        }
             char tmp = (char) new Scanner(System.in).nextByte();
             switch (tmp) {
                 case 1:
@@ -154,21 +219,21 @@ public class Start {
                     ctx.channel().close();
                     break;
                 default:
-                    throw new Exception();
+                    System.err.println("输入错误");
             }
     }
 
     private void main_menu(ChannelHandlerContext ctx) throws Exception {
-        boolean flag = true;
         while(true) {
-            synchronized (this) {
                 System.out.println("\t----------------------------------------\t");
                 System.out.println("\t---------    1.好友            ---------\t");
                 System.out.println("\t---------    2.群聊            ---------\t");
-                System.out.println("\t---------    3.退出登录         ---------\t");
+                System.out.println("\t---------    3.查询用户（uid）   ---------\t");
                 System.out.println("\t---------    4.未读消息(" + unread_message + ")     ---------\t");
+                System.out.println("\t---------    5.我的资料         ---------\t");
+                System.out.println("\t---------    6.黑名单           ---------\t");
+                System.out.println("\t---------    7.退出登录         ---------\t");
                 System.out.println("\t----------------------------------------\t");
-            }
             char tmp = (char) new Scanner(System.in).nextByte();
             switch (tmp) {
                 case 1:
@@ -178,18 +243,37 @@ public class Start {
                     ChatSystem.groupSystem(load,ctx);
                     break;
                 case 3:
-                    flag = false;
+                    FindSystem.FindUid(ctx,friend);
                     break;
                 case 4:
+                    ChatSystem.unreadMessage();
                     break;
-            }
-            if(!flag){
-                break;
+                case 5:
+                    MaterialSystem.myMaterial(load,ctx);
+                    break;
+                case 6:
+
+                    break;
+                case 7:
+                    ctx.channel().close();
+                    return;
+                default:
+                    System.out.println("输入错误，请重新尝试");
+                    break;
             }
         }
     }
 
     public static void main(String[] args) throws InterruptedException {
+//        sun.misc.SignalHandler handler = new sun.misc.SignalHandler() {
+//            @Override
+//            public void handle(sun.misc.Signal signal) {
+//                // 什么都不做
+//            }
+//        };    // 设置INT信号(Ctrl+C中断执行)交给指定的信号处理器处理，废掉系统自带的功能
+//        sun.misc.Signal.handle(new sun.misc.Signal("INT"), handler);
+
         new Start().Begin();
+
     }
 }

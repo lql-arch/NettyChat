@@ -4,6 +4,7 @@ import NettyChat.DbUtil;
 import message.LoginMessage;
 
 import java.sql.*;
+import java.time.format.DateTimeFormatter;
 
 public class processLogin {
     static int uid = 100000;
@@ -44,7 +45,8 @@ public class processLogin {
         msg.setUid(uid);
 
 
-        Date date ;
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        Date date = Date.valueOf(dtf.toString());
 
         PreparedStatement ps3 = con.prepareStatement("insert into user(uid,name,password,age,gander,build_time) values (?,?,?,?,?,?)");
         ps3.setObject(1,uid);
@@ -54,8 +56,7 @@ public class processLogin {
         ps3.setObject(5,"b");
         ps3.setObject(6,date);
 
-        boolean execute = ps3.execute();
-        return !execute;
+        return !ps3.execute();
     }
 
     public static boolean login(LoginMessage msg) throws SQLException {

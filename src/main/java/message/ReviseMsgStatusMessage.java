@@ -1,21 +1,39 @@
 package message;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.sql.Timestamp;
 
 public class ReviseMsgStatusMessage extends Message{
 
     private String myUid;
     private String friendUid;
-    private Timestamp time;
+    private String date;
 
     public ReviseMsgStatusMessage(String myUid, String friendUid, Timestamp time){
         this.friendUid = friendUid;
         this.myUid = myUid;
-        this.time = time;
+        this.date = time.toString();
+    }
+
+    public void setFriendUid(String friendUid) {
+        this.friendUid = friendUid;
+    }
+
+    public void setTime(@NotNull Timestamp date) {
+        this.date = date.toString();
+    }
+
+    public void setMyUid(String myUid) {
+        this.myUid = myUid;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
     }
 
     public Timestamp getTime() {
-        return time;
+        return Timestamp.valueOf(date);
     }
 
     public String getMyUid() {

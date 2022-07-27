@@ -8,7 +8,7 @@ public class Chat_group { //用户的群资料
     private List<group_content> msg;
     private String groupName;
     private List<String> members;
-    private Date date;
+    private String date;
     private List<String> administrator;
     private String group_master;
     private long last_msg_id;
@@ -28,8 +28,8 @@ public class Chat_group { //用户的群资料
         this.groupName = groupName;
     }
 
-    public Date getDate() {
-        return date;
+    public Date getTime() {
+        return Date.valueOf(date);
     }
 
     public List<String> getAdministrator() {
@@ -56,6 +56,10 @@ public class Chat_group { //用户的群资料
         return last_msg_id;
     }
 
+    public void setDate(String date) {
+        this.date = date;
+    }
+
     public void setGroup_master(String group_master) {
         this.group_master = group_master;
     }
@@ -80,8 +84,8 @@ public class Chat_group { //用户的群资料
         this.last_msg_id = last_msg_id;
     }
 
-    public void setDate(Date date) {
-        this.date = date;
+    public void setTime(Date date) {
+        this.date = date.toString();
     }
 
     public void addMsg(group_content msg){
@@ -95,10 +99,10 @@ public class Chat_group { //用户的群资料
     public void addAdministrator(String uid){
         this.administrator.add(uid);
     }
-    static class group_content{
+    private class group_content{
         private String text;
-        private String uid;
-        private Date date;
+        private String uid;//发送者
+        private String date;
         public group_content(String text,String uid){
             this.text = text;
             this.uid = uid;
@@ -112,12 +116,24 @@ public class Chat_group { //用户的群资料
             return uid;
         }
 
-        public void setDate(Date date) {
+        public void setTime(Date date) {
+            this.date = date.toString();
+        }
+
+        public void setDate(String date) {
             this.date = date;
         }
 
-        public Date getDate() {
-            return date;
+        public void setText(String text) {
+            this.text = text;
+        }
+
+        public void setUid(String uid) {
+            this.uid = uid;
+        }
+
+        public Date getTime() {
+            return Date.valueOf(date);
         }
     }
 }

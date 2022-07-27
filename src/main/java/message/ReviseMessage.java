@@ -1,7 +1,5 @@
 package message;
 
-import java.sql.Timestamp;
-
 public class ReviseMessage extends Message{
     private String uid ;
     private String name;
@@ -29,6 +27,34 @@ public class ReviseMessage extends Message{
         this.age = age;
         this.gander = null;
         this.password = null;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public void setGander(String gander) {
+        this.gander = gander;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public boolean isResult() {
+        return result;
+    }
+
+    public void setResult(boolean result) {
+        this.result = result;
     }
 
     public String getPassword() {
