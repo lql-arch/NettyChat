@@ -83,7 +83,7 @@ public class ChatSystem {
             System.out.println("年龄:" + friend.getAge());
             System.out.println("用户创建时间:" + friend.getBuild_time());
             //好友状态
-            //System.out.println("用户状态:" + );
+            //System.out.println("用户状态:" + friend.getStatus());
             while (!flag) {
                 System.out.println("----------------------------------------");
                 System.out.println("1.发送消息\t2.返回\t");
