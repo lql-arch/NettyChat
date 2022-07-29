@@ -1,4 +1,4 @@
-package NettyChat;
+package config;
 
 public class ToMessage {
 

@@ -1,6 +1,6 @@
 package Server.processLogin;
 
-import NettyChat.DbUtil;
+import config.DbUtil;
 import message.FindMessage;
 import message.RequestMessage;
 

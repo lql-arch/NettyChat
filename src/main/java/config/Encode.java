@@ -1,16 +1,13 @@
 package config;
 
 
-import NettyChat.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import message.LoadMessage;
 import message.Message;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class Encode extends MessageToMessageEncoder<Message> {//编码

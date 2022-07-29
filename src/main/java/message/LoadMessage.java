@@ -2,13 +2,16 @@ package message;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class LoadMessage extends Message{
 
     private String uid;
     private String gid;
     private List<String> friends;
+    private Map<String,String> uidNameMap;
     private List<Chat_group> Group;
     private List<Chat_record> message;
     private Integer unread_message;
@@ -17,7 +20,7 @@ public class LoadMessage extends Message{
     private String gander;
 //    private Date build_time;
     private String date;
-    private int status;//0:登录获取资料，1：好友聊天查询实时消息，2：群聊查询实时消息
+    private int status;//0:登录获取资料，1：好友聊天查询实时消息，2：群聊查询实时消息,4:刷新资料
 
     public LoadMessage(String id,int status){
         this.status = status;
@@ -26,6 +29,9 @@ public class LoadMessage extends Message{
         }else if(status == 2){
             this.gid = id;
         }
+        friends = new ArrayList<>();
+        Group = new ArrayList<>();
+        message = new ArrayList<>();
     }
     @Override
     public int getMessageType() {
@@ -79,6 +85,19 @@ public class LoadMessage extends Message{
     public String getGander() {
         return gander;
     }
+
+    public Map<String, String> getUidNameMap() {
+        return uidNameMap;
+    }
+
+    public void setUidNameMap(Map<String, String> uidNameMap) {
+        this.uidNameMap = uidNameMap;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
     public void addFriend(String friends){
         this.friends.add(friends);
     }

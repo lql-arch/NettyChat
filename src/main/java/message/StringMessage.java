@@ -11,6 +11,12 @@ public class StringMessage extends Message {
 
     private UserMessage friend;
     private String date;
+    public StringMessage(UserMessage me, UserMessage friend, String message, String date) {
+        this.message = message;
+        this.me = me;
+        this.friend = friend;
+        this.date = date;
+    }
     public StringMessage(UserMessage me, UserMessage friend, String message, Timestamp date) {
         this.message = message;
         this.me = me;

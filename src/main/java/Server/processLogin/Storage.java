@@ -1,14 +1,11 @@
 package Server.processLogin;
 
-import NettyChat.DbUtil;
-import io.netty.channel.ChannelHandlerContext;
+import config.DbUtil;
 import message.RequestMessage;
 import message.StringMessage;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.LocalDateTime;
 
 public class Storage {
 
@@ -17,16 +14,17 @@ public class Storage {
         Connection con = db.getConn();
         PreparedStatement ps;
         con.prepareStatement("use members");
-        ps = con.prepareStatement("insert into members.user_text(recipient_uid, send_uid, time, status, text) values(?,?,?,?,?)");
+        ps = con.prepareStatement("insert into members.user_text(recipient_uid, send_uid, time, status, text,isAddFriend,addGroup) values(?,?,?,?,?,null,null)");
         ps.setObject(1,msg.getFriend().getUid());
         ps.setObject(2,msg.getMe().getUid());
         ps.setObject(3,msg.getTime());
         ps.setObject(4,true);
         ps.setObject(5,msg.getMessage());
+        ps.execute();
 
     }
 
-    public static void storageBuildFriends(ChannelHandlerContext ctx, RequestMessage msg) throws SQLException {//建立好友关系并存储到数据库
+    public static void storageBuildFriends(RequestMessage msg) throws SQLException {//建立好友关系并存储到数据库
         DbUtil db = DbUtil.getDb();
         Connection con = db.getConn();
         PreparedStatement ps;
@@ -48,5 +46,45 @@ public class Storage {
         ps.setObject(4,msg.getRecipientPerson().getUid());
         ps.execute();
         //开摆
+    }
+
+//    public static boolean storageAddAddFriend(ChannelHandlerContext ctx,RequestMessage msg) throws SQLException {
+//        DbUtil db = DbUtil.getDb();
+//        Connection con = db.getConn();
+//        PreparedStatement ps;
+//
+//        ps = con.prepareStatement("use member");
+//        ps.execute();
+//
+//        Date date = Date.valueOf(LocalDate.now());
+//        String str = msg.getRequestPerson().getName()+"请求加你为好友。";
+//
+//        ps = con.prepareStatement("insert into members.user_text(recipient_uid, send_uid, time, status, text,isAddFriend,addGroup) values(?,?,?,?,?,false,null)");
+//        ps.setObject(1,msg.getRecipientPerson().getUid());
+//        ps.setObject(2,msg.getRequestPerson().getName());
+//        ps.setObject(3,date);
+//        ps.setObject(4,true);
+//        ps.setObject(5,str);
+//        return !ps.execute();
+//
+//    }
+
+    public static  void storageRequestMessage(StringMessage msg,boolean addFriend,boolean status) throws SQLException {
+        DbUtil db = DbUtil.getDb();
+        Connection con = db.getConn();
+        PreparedStatement ps;
+
+        Timestamp ts = Timestamp.valueOf(LocalDateTime.now());
+
+        con.prepareStatement("use members");
+        ps = con.prepareStatement("insert into members.user_text(recipient_uid, send_uid, time, status, text,isAddFriend,addGroup) values(?,?,?,?,?,?,null)");
+        ps.setObject(1,msg.getFriend().getUid());
+        ps.setObject(2,msg.getMe().getUid());
+        ps.setObject(3,ts);
+        ps.setObject(4,status);
+        ps.setObject(5,msg.getMessage());
+        ps.setObject(6,addFriend);
+
+        ps.execute();
     }
 }

@@ -1,6 +1,6 @@
 package Server.session;
 
-import NettyChat.DbUtil;
+import config.DbUtil;
 import io.netty.channel.Channel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

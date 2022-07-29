@@ -18,7 +18,7 @@ public class MaterialSystem {
             boolean flag = false;
             ctx.channel().writeAndFlush(new UserMessage(load.getUid()));
 //            Start.count.await();
-            Start.semaphore.acquire();
+            Start.semaphore.acquire(1);
             UserMessage me = Start.friend;
             String t = me.getGander().startsWith("n") ? "男" : (me.getGander().startsWith( "m") ? "女" : "未知");
 
@@ -168,6 +168,10 @@ public class MaterialSystem {
                 break;
             }
         }
+    }
+
+    public static void blacklist(LoadMessage load , ChannelHandlerContext ctx){
+
     }
 
 }

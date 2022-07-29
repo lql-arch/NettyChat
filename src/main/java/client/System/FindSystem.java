@@ -2,6 +2,7 @@ package client.System;
 
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
+import message.LoadMessage;
 import message.RequestMessage;
 import message.UserMessage;
 import org.apache.logging.log4j.LogManager;
@@ -12,13 +13,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 public class FindSystem {
     private static final Logger log = LogManager.getLogger();
-    public static void FindUid(ChannelHandlerContext ctx,UserMessage user) throws IOException, InterruptedException {
+
+    public static void FindUid(ChannelHandlerContext ctx) throws IOException, InterruptedException {
         int read = 0;
         byte[] b = new byte[1024];
         System.out.println("请输入想要查询的用户uid：(ctrl+d退出)");
@@ -27,7 +30,7 @@ public class FindSystem {
             b = "end".getBytes();
             return;
         }
-        String uid = new String(b,0,read);
+        String uid = new String(b,0,read-1);
 //        BufferedReader systemIn = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 //        String uid = null;
 //        try{
@@ -39,11 +42,14 @@ public class FindSystem {
 //        }
         String myUid = Start.uid;
         ctx.channel().writeAndFlush(new UserMessage(myUid));
-        Start.semaphore.acquire();
-        UserMessage me = user;
+        Start.semaphore.acquire(1);
+        UserMessage me = Start.friend;
 
         ctx.channel().writeAndFlush(new UserMessage(uid));
-        Start.semaphore.acquire();
+//        Thread.sleep(1000);
+//        log.debug(Start.semaphore.availablePermits());
+        Start.semaphore.acquire(1);
+        UserMessage user = Start.friend;
         if(user.getUid().equals(me.getUid()) || user.getBuild_time() == null){
             System.out.println("查无此人");
             return;
@@ -78,10 +84,5 @@ public class FindSystem {
                     break;
             }
         }
-    }
-
-
-    private static void addFriend(ChannelHandlerContext ctx,UserMessage me, UserMessage user){
-
     }
 }

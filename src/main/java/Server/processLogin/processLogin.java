@@ -1,10 +1,10 @@
 package Server.processLogin;
 
-import NettyChat.DbUtil;
+import config.DbUtil;
 import message.LoginMessage;
 
 import java.sql.*;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 
 public class processLogin {
     static int uid = 100000;
@@ -16,7 +16,7 @@ public class processLogin {
         }
         PreparedStatement ps1 = con.prepareStatement("use members");
         ps1.execute();
-        PreparedStatement ps2 = con.prepareStatement("select password FROM user where uid = ?");
+        PreparedStatement ps2 = con.prepareStatement("select password FROM members.user where uid = ?");
         ps2.setObject(1,uid);
         try(ResultSet rs = ps2.executeQuery()){
             while(rs.next()){
@@ -44,11 +44,9 @@ public class processLogin {
         String uid = getUid();
         msg.setUid(uid);
 
+        Timestamp date = Timestamp.valueOf(LocalDateTime.now());
 
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        Date date = Date.valueOf(dtf.toString());
-
-        PreparedStatement ps3 = con.prepareStatement("insert into user(uid,name,password,age,gander,build_time) values (?,?,?,?,?,?)");
+        PreparedStatement ps3 = con.prepareStatement("insert into members.user(uid,name,password,age,gander,build_time) values (?,?,?,?,?,?)");
         ps3.setObject(1,uid);
         ps3.setObject(2,uid);
         ps3.setObject(3,password);
@@ -77,7 +75,7 @@ public class processLogin {
         }
         PreparedStatement ps1 = con.prepareStatement("use members");
         ps1.execute();
-        ps1 = con.prepareStatement("select uid from user order by uid desc limit 1");
+        ps1 = con.prepareStatement("select uid from members.user order by uid desc limit 1");
         ResultSet rs = ps1.executeQuery();
         rs.next();
         String max = rs.getString("uid");

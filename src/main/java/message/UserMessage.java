@@ -31,6 +31,8 @@ public class UserMessage extends Message{
     }
 
     public Date getBuild_time() {
+        if(data == null)
+            return null;
         return Date.valueOf(data);
     }
 

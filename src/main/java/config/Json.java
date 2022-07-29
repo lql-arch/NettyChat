@@ -1,4 +1,4 @@
-package NettyChat;
+package config;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.GsonBuilder;

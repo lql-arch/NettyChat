@@ -1,6 +1,6 @@
 package Server;
 
-import NettyChat.DbUtil;
+import config.DbUtil;
 import Server.processLogin.*;
 import config.Decode;
 import config.Encode;
@@ -15,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,11 +71,15 @@ public class ChatServer {
                                     } else if(str.equals("err!")){
                                         //log.info(ctx.channel() + "错误登录");
                                     } else if(str.startsWith("start")){
-                                        LoadMessage lm = LoadSystem.loadMessage(strings[1]);
+                                        LoadMessage lm = LoadSystem.loadMessage(strings[1],0);
                                         log.info("start!");
-//                                        log.debug("load.uid:"+lm.getUid()+" "+lm.getName()+" "+lm.getGander()+" ");
                                         ctx.channel().writeAndFlush(lm);
-                                    }else if(str.startsWith("singleLoad")){
+                                    }else if(str.startsWith("flush")){
+                                        LoadMessage lm = LoadSystem.loadMessage(strings[1],3);
+                                        log.info("flush!");
+                                        ctx.channel().writeAndFlush(lm);
+                                    }
+                                    else if(str.startsWith("singleLoad")){
                                         log.info("读取单聊信息："+strings[1]+"和"+strings[2]);
                                         ctx.channel().writeAndFlush(LoadSystem.SingleChat(strings[1],strings[2]));
                                     }
@@ -103,8 +109,9 @@ public class ChatServer {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, UserMessage msg) throws Exception {
                                     String uid = msg.getUid();
-//                                    log.debug("uid:"+uid);
-                                    ctx.writeAndFlush(LoadSystem.friendMaterial(uid));
+                                    UserMessage um = LoadSystem.friendMaterial(uid);
+//                                    log.debug("uid:"+uid+" "+um.getBuild_time());
+                                    ctx.writeAndFlush(um);
                                 }
                             });
 
@@ -146,9 +153,7 @@ public class ChatServer {
                                     Channel channel = uidChannelMap.get(msg.getFriend().getUid());
                                     if(channel != null) {
                                         channel.writeAndFlush(msg);
-                                    } else{
-                                        //不在线
-                                    }
+                                    }//在线
                                     Storage.storageSingleMessage(msg);
                                 }
                             });
@@ -161,6 +166,7 @@ public class ChatServer {
                                     }
                                 }
                             });
+
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<RequestMessage>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
@@ -168,19 +174,27 @@ public class ChatServer {
                                         ctx.channel().writeAndFlush(new RequestMessage(true));
                                     }else{
                                         //向对象发送确认消息
-                                        if(!msg.isConfirm()) {//isFriend以false开始发送添加信息
-                                            Channel channel = uidChannelMap.get(msg.getRecipientPerson().getUid());
-                                            msg.setFriend(false);
-                                            msg.setConfirm(true);
-                                            channel.writeAndFlush(msg);
+                                        if(!msg.isConfirm()) {
+                                            if(!msg.isFriend()){//拒绝
+                                                String str = msg.getRecipientPerson().getName()+"拒绝了你的好友请求";
+                                                StringMessage sm = new StringMessage(msg.getRecipientPerson(),msg.getRequestPerson(),str, Timestamp.valueOf(LocalDateTime.now()));
+                                                ReviseMaterial.reviseAddFriendMsg(msg,false);
+                                                Storage.storageRequestMessage(sm,false,true);
+                                            }else {//isFriend以false开始保存添加信息到数据库
+                                                msg.setFriend(false);
+                                                msg.setConfirm(true);
+                                                String str = msg.getRequestPerson().getName()+"发起了好友申请";
+                                                StringMessage sm = new StringMessage(msg.getRequestPerson(),msg.getRecipientPerson(),str, Timestamp.valueOf(LocalDateTime.now()));
+                                                Storage.storageRequestMessage(sm,false,true);
+                                            }
                                         }else{//对方确认添加后将confirm改为false发送对方表示通知.
                                             msg.setFriend(true);
                                             msg.setConfirm(false);
-                                            Storage.storageBuildFriends(ctx,msg);
-                                            Channel channel1 = uidChannelMap.get(msg.getRecipientPerson().getUid());
-                                            Channel channel2 = uidChannelMap.get(msg.getRequestPerson().getUid());
-                                            channel1.writeAndFlush(msg);
-                                            channel2.writeAndFlush(msg);
+                                            String str = msg.getRecipientPerson().getName()+"同意了你的好友请求";
+                                            StringMessage sm = new StringMessage(msg.getRecipientPerson(),msg.getRequestPerson(),str, Timestamp.valueOf(LocalDateTime.now()));
+                                            ReviseMaterial.reviseAddFriendMsg(msg,true);//修改状态为已读
+                                            Storage.storageRequestMessage(sm,true,true);
+                                            Storage.storageBuildFriends(msg);//建立联系
                                         }
                                     }
                                 }

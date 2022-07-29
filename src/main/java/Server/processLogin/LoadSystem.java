@@ -1,28 +1,35 @@
 package Server.processLogin;
 
-import NettyChat.DbUtil;
+import config.DbUtil;
+import Server.ChatServer;
 import message.LoadMessage;
 import message.Chat_group;
 import message.Chat_record;
 import message.UserMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class LoadSystem{
+    private static final Logger log = LogManager.getLogger(ChatServer.class);
     //读完后换标记(?)
 
-    public static LoadMessage loadMessage(String uid) throws SQLException {
+    public static LoadMessage loadMessage(String uid,int ver) throws SQLException {
         DbUtil db = DbUtil.getDb();
         Connection conn = db.getConn();
-        LoadMessage loadMessage = new LoadMessage(uid,0);
+        LoadMessage loadMessage = new LoadMessage(uid,ver);
         List<String> friends = new ArrayList<>();
         List<Chat_group> Group = new ArrayList<>();
         List<Chat_record> message = new ArrayList<>();
+        Map<String,String> uidNameMap = new HashMap<>();
 
 
-        Date time;
+        Date time = null;
         String gander;
         int age;
         String name;
@@ -34,13 +41,17 @@ public class LoadSystem{
         ps1.execute();
 
         //得到好友的uid
-        ps2 = conn.prepareStatement("select second_uid from members.friends where first_uid = ?");
+        ps2 = conn.prepareStatement("select second,second_uid from members.friends where first_uid = ?");
         ps2.setObject(1,uid);
         rs = ps2.executeQuery();
         while(rs.next()){
-            String friend = rs.getString("second_uid");
+            String friend_uid = rs.getString("second_uid");
+            String friend = rs.getString("second");
             friends.add(friend);
+            uidNameMap.put(friend_uid,friend);
         }
+
+
 
         //得到自己的资料
         ps2 = conn.prepareStatement("select name,age,gander,build_time from members.user where uid = ?");
@@ -73,42 +84,45 @@ public class LoadSystem{
         }
 
         //得到自己的群聊信息
-        long last_msg_id;
+        Timestamp last_msg_time;
         ps1 = conn.prepareStatement("use chat_group");
         ps1.execute();
-        ps2 = conn.prepareStatement("select gid,last_msg_id from group_user where uid = ?");
+
+        ps2 = conn.prepareStatement("select gid,last_msg_id from chat_group.group_user where uid = ?");
         ps2.setObject(1,uid);
         rs = ps2.executeQuery();
         while(rs.next()) {
             Chat_group group = new Chat_group();
 
             String gid = rs.getString("gid");
-            last_msg_id = rs.getInt("last_msg_id");
-            group.setLast_msg_id(last_msg_id);
+            last_msg_time = rs.getTimestamp("last_msg_id");
+            group.setLast_msg_time(last_msg_time.toString());
+            group.setGid(gid);
 
-            ps2 = conn.prepareStatement("select group_name,create_time from `group` where gid = ?");
+            ps2 = conn.prepareStatement("select group_name,create_time from chat_group.`group` where gid = ?");
             ps2.setObject(1,gid);
             ResultSet rs1 = ps2.executeQuery();
-            while (rs1.next()) {
+            if(rs1.next()) {
                 group.setGroupName(rs1.getString("group_name"));
                 group.setTime(rs1.getDate("creat_time"));
             }
 
             //获取群聊消息(unread限制没写)
-            ps2 = conn.prepareStatement("select uid,text from group_msg where gid = ? and id > ? ");
+            ps2 = conn.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time > ? ");
             ps2.setObject(1,gid);
-            ps2.setObject(2,last_msg_id);
+            ps2.setObject(2,last_msg_time);
             rs1 = ps2.executeQuery();
             while (rs1.next()) {
                 String rg_uid = rs1.getString("uid");
                 String rg_test = rs1.getString("text");
-                group.addMsg(group.setContent(rg_uid, rg_test));
+                Timestamp ts = rs1.getTimestamp("time");
+                group.addMsg(group.setContent(rg_uid, rg_test,ts));
             }
 
-            ps2 = conn.prepareStatement("select administrator,group_master,uid from group_user where gid = ?");
+            ps2 = conn.prepareStatement("select administrator,group_master,uid from chat_group.group_user where gid = ?");
             ps2.setObject(1,gid);
             rs1 = ps2.executeQuery();
-            while (rs1.next()) {
+            while (rs1.next()){
                 String rg_uid = rs1.getString("uid");
                 group.addMembers(rg_uid);
                  if(rs1.getBoolean("administrator")){
@@ -128,6 +142,7 @@ public class LoadSystem{
         loadMessage.setFriends(friends);
         loadMessage.setGroup(Group);
         loadMessage.setUnread_message(unread_message);
+        loadMessage.setUidNameMap(uidNameMap);
         return loadMessage;
     }
 
@@ -140,13 +155,11 @@ public class LoadSystem{
 
         ps = conn.prepareStatement("use members");
         ps.execute();
-//        if(!ps.execute()){
-//            throw new SQLException("not members");
-//        }
+
         ps = conn.prepareStatement("select name,age,build_time,gander from members.user where uid = ?");
         ps.setObject(1,uid);
         rs = ps.executeQuery();
-        if(rs.next()){
+        while(rs.next()){
             user.setName(rs.getString("name"));
             user.setAge(rs.getInt("age"));
             user.setGander(rs.getString("gander"));

@@ -15,10 +15,7 @@ import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.concurrent.CountDownLatch;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,7 +23,7 @@ public class Start {
     private  static final Logger log = LogManager.getLogger();
     private LoginMessage login;
     private static AtomicBoolean flag = new AtomicBoolean(false);
-    private static int unread_message = 0;
+    public static int unread_message = 0;
     private  LoadMessage load;
     public static LoadMessage singleLoad;
     public static LoadMessage groupLoad;
@@ -34,9 +31,11 @@ public class Start {
     public static Semaphore semaphore = new Semaphore(0);
 //    public static CountDownLatch count = new CountDownLatch(1);
     public static AtomicBoolean EnterPassword = new AtomicBoolean(true);
-    public static String uid ;
-    public static List<StringMessage> message = new ArrayList<>();
+    public static String uid ;// myUid
+    public static List<StringMessage> message = new ArrayList<>();//登录后的未读消息
     public static AtomicBoolean singleFlag = new AtomicBoolean(false);
+    public static Map<String,String> uidNameMap = new HashMap<>();
+
 
     public void Begin() throws InterruptedException {
         Bootstrap boot = new Bootstrap();
@@ -63,7 +62,6 @@ public class Start {
 //                                    }
 //                                }
 //                            });
-
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginStringMessage>() {
                                 @Override
                                 public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -104,6 +102,7 @@ public class Start {
                                     if(msg.getStatus() == 0) {
                                         load = msg;
                                         unread_message = msg.getUnread_message();
+                                        //FindSystem.addUidNameMap(load,uidNameMap);
                                         new Thread(() -> {
                                             try {
                                                 main_menu(ctx);
@@ -119,6 +118,11 @@ public class Start {
                                     if(msg.getStatus() == 2){
                                         groupLoad = msg;
                                     }
+                                    if(msg.getStatus() == 3){//flush
+                                        load = msg;
+                                        unread_message = msg.getUnread_message();
+                                        semaphore.release();
+                                    }
                                 }
                             });
 
@@ -126,8 +130,6 @@ public class Start {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, UserMessage msg) throws Exception {
                                     friend = msg;
-//                                    log.debug(friend.getUid());
-//                                    count.countDown();
                                     semaphore.release();
                                 }
                             });
@@ -136,7 +138,6 @@ public class Start {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, FindMessage msg) throws Exception {
                                     EnterPassword.compareAndSet(EnterPassword.get(),msg.getResult());
-//                                    count.countDown();
                                     semaphore.release();
                                 }
                             });
@@ -168,15 +169,16 @@ public class Start {
                                     if(msg.isFriend()){
                                         System.err.println("你与目标已经是好友了！");
                                     }else{
-                                        if(msg.isConfirm()){
-                                            //确认是否添加好友，不添加将confirm改为false
-                                            ctx.writeAndFlush(msg);
-                                        }else{
+                                        if(!msg.isConfirm()){
                                             //将好友信息添加到目前的好友队列中
                                             String addName = load.getName().equals(msg.getRequestPerson().getName()) ? msg.getRecipientPerson().getName() : msg.getRequestPerson().getName();
                                             load.addFriend(addName);
-                                            System.err.println("好友添加成功");
                                         }
+                                            //确认是否添加好友，不添加将confirm改为false,isFriend也改为false
+                                            //写未读消息
+//                                            msg.setConfirm(false);
+//                                            msg.setFriend(false);
+//                                            ctx.writeAndFlush(msg);
                                     }
                                 }
                             });
@@ -225,6 +227,8 @@ public class Start {
 
     private void main_menu(ChannelHandlerContext ctx) throws Exception {
         while(true) {
+                ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+login.getUid()));
+                semaphore.acquire();
                 System.out.println("\t----------------------------------------\t");
                 System.out.println("\t---------    1.好友            ---------\t");
                 System.out.println("\t---------    2.群聊            ---------\t");
@@ -237,22 +241,22 @@ public class Start {
             char tmp = (char) new Scanner(System.in).nextByte();
             switch (tmp) {
                 case 1:
-                    ChatSystem.friendSystem(load,ctx,friend);
+                    ChatSystem.friendSystem(load,ctx);
                     break;
                 case 2:
                     ChatSystem.groupSystem(load,ctx);
                     break;
                 case 3:
-                    FindSystem.FindUid(ctx,friend);
+                    FindSystem.FindUid(ctx);
                     break;
                 case 4:
-                    ChatSystem.unreadMessage();
+                    ChatSystem.unreadMessage(ctx,load);
                     break;
                 case 5:
                     MaterialSystem.myMaterial(load,ctx);
                     break;
                 case 6:
-
+                    MaterialSystem.blacklist(load,ctx);
                     break;
                 case 7:
                     ctx.channel().close();

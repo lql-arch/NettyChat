@@ -10,6 +10,12 @@ public class ReviseMsgStatusMessage extends Message{
     private String friendUid;
     private String date;
 
+    public ReviseMsgStatusMessage(String myUid, String friendUid, String time){
+        this.friendUid = friendUid;
+        this.myUid = myUid;
+        this.date = time;
+    }
+
     public ReviseMsgStatusMessage(String myUid, String friendUid, Timestamp time){
         this.friendUid = friendUid;
         this.myUid = myUid;

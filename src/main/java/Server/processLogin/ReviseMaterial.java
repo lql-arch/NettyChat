@@ -1,6 +1,7 @@
 package Server.processLogin;
 
-import NettyChat.DbUtil;
+import config.DbUtil;
+import message.RequestMessage;
 import message.ReviseMsgStatusMessage;
 import message.ReviseMessage;
 
@@ -56,7 +57,7 @@ public class ReviseMaterial {
         PreparedStatement ps = con.prepareStatement("use members");
         ps.execute();
 
-        ps = con.prepareStatement("update members.user_text set status = false where status = true and time <= ? and send_uid = ? and recipient_uid = ?");
+        ps = con.prepareStatement("update members.user_text set status = false where status = true and time <= ? and send_uid = ? and recipient_uid = ? and isAddFriend = false and addGroup = false");
         ps.setObject(1,msg.getTime());
         ps.setObject(2,msg.getFriendUid());
         ps.setObject(3,msg.getMyUid());
@@ -64,4 +65,19 @@ public class ReviseMaterial {
         return !ps.execute();
     }
 
+
+    public static boolean reviseAddFriendMsg(RequestMessage msg,boolean result) throws SQLException {
+        DbUtil db = DbUtil.getDb();
+        Connection con = db.getConn();
+
+        PreparedStatement ps = con.prepareStatement("use members");
+        ps.execute();
+
+        ps = con.prepareStatement("update members.user_text set status = false,isAddFriend = ? where isAddFriend = false  and status = true and send_uid = ? and recipient_uid = ?");
+        ps.setObject(1,result);
+        ps.setObject(2,msg.getRequestPerson().getUid());
+        ps.setObject(3,msg.getRecipientPerson().getUid());
+
+        return !ps.execute();
+    }
 }

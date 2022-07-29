@@ -1,17 +1,19 @@
 package message;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Chat_group { //用户的群资料
+    private String gid;
     private List<group_content> msg;
     private String groupName;
     private List<String> members;
     private String date;
     private List<String> administrator;
     private String group_master;
-    private long last_msg_id;
+    private String last_msg_time;
 
 
     public Chat_group() {
@@ -20,8 +22,8 @@ public class Chat_group { //用户的群资料
         administrator = new ArrayList<>();
     }
 
-    public group_content setContent(String text,String uid){
-        return new group_content(text,uid);
+    public group_content setContent(String text, String uid, Timestamp ts){
+        return new group_content(text,uid,ts);
     }
 
     public Chat_group(String groupName) {
@@ -52,8 +54,16 @@ public class Chat_group { //用户的群资料
         return msg;
     }
 
-    public long getLast_msg_id() {
-        return last_msg_id;
+    public Timestamp getLast_msg_time() {
+        return Timestamp.valueOf(last_msg_time);
+    }
+
+    public String getGid() {
+        return gid;
+    }
+
+    public void setGid(String gid) {
+        this.gid = gid;
     }
 
     public void setDate(String date) {
@@ -80,8 +90,8 @@ public class Chat_group { //用户的群资料
         this.msg = msg;
     }
 
-    public void setLast_msg_id(long last_msg_id) {
-        this.last_msg_id = last_msg_id;
+    public void setLast_msg_time(String last_msg_time) {
+        this.last_msg_time = last_msg_time;
     }
 
     public void setTime(Date date) {
@@ -99,13 +109,15 @@ public class Chat_group { //用户的群资料
     public void addAdministrator(String uid){
         this.administrator.add(uid);
     }
-    private class group_content{
+
+    public class group_content{
         private String text;
         private String uid;//发送者
         private String date;
-        public group_content(String text,String uid){
+        public group_content(String text,String uid,Timestamp date){
             this.text = text;
             this.uid = uid;
+            this.date = date.toString();
         }
 
         public String getText() {

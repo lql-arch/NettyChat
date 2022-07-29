@@ -1,11 +1,9 @@
 package config;
 
-import NettyChat.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.util.CharsetUtil;
-import message.LoadMessage;
 import message.Message;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
