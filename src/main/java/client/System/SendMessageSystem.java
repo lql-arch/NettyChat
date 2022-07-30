@@ -13,17 +13,20 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Scanner;
 
 public class SendMessageSystem {
     private static final Logger log = LogManager.getLogger(SendMessageSystem.class);
     public static void sendFriend(ChannelHandlerContext ctx, UserMessage me,UserMessage friend) throws IOException, InterruptedException {
         byte b[]= new byte[1024];
         Timestamp date = Timestamp.valueOf(LocalDateTime.now());
+        String string = "?";
 
         System.out.println("--------------------------------------------------");
-        System.out.println("\t\t\t"+friend.getName()+"\t");
+        System.out.println("\t\t\t"+friend.getName()+"(输入EXIT退出)\t");
         System.out.println("--------------------------------------------------");
-        ctx.channel().writeAndFlush(new LoginStringMessage("singleLoad!"+me.getUid()+"!"+friend.getUid()));
+        ctx.channel().writeAndFlush(new LoginStringMessage("singleLoad!"+Start.uid+"!"+friend.getUid()));
+        Start.semaphore.acquire();
         showMessage(me,friend);
         Start.singleFlag.set(true);
 //        Thread time = new Thread(()->{//每五分钟发送一次时间
@@ -40,16 +43,23 @@ public class SendMessageSystem {
 //            }
 //        });
 //        time.start();
-        for(int read;(read = System.in.read(b)) != -1;) {
-            String string = new String(b, 0, read);
-            date = Timestamp.valueOf(LocalDateTime.now());
-            System.out.println(me.getName() + ": " + string);
-            ctx.channel().writeAndFlush(new StringMessage(me,friend,string,date));
-        }
-        System.out.println("--------------------------------------------------");
-        Start.singleFlag.set(false);
-        //在此处更新数据未读状态(date之前的消息都改为未读)
-        ctx.channel().writeAndFlush(new ReviseMsgStatusMessage(me.getUid(),friend.getUid(),date));//time send_uid rg_id
+//        try {
+            while((string = new Scanner(System.in).nextLine()) != null){
+                if(string.compareToIgnoreCase("exit") == 0) {
+                    break;
+                }
+                date = Timestamp.valueOf(LocalDateTime.now());
+                System.out.println(me.getName() + ": " + string);
+                ctx.channel().writeAndFlush(new StringMessage(me, friend, string, date.toString()));
+            }
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }finally {
+            System.out.println("--------------------------------------------------");
+            Start.singleFlag.set(false);
+            //在此处更新数据未读状态(date之前的消息都改为未读)
+            ctx.channel().writeAndFlush(new ReviseMsgStatusMessage(me.getUid(), friend.getUid(), date.toString()));//time send_uid rg_id
+//        }
 //        time.interrupt();
 //        time.join();
     }

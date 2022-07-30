@@ -16,10 +16,10 @@ public class MaterialSystem {
     public static void myMaterial(LoadMessage load, ChannelHandlerContext ctx) throws InterruptedException {
         while(true) {
             boolean flag = false;
-            ctx.channel().writeAndFlush(new UserMessage(load.getUid()));
-//            Start.count.await();
-            Start.semaphore.acquire(1);
+            ctx.channel().writeAndFlush(new UserMessage(Start.uid));
+            Start.semaphore.acquire();
             UserMessage me = Start.friend;
+
             String t = me.getGander().startsWith("n") ? "男" : (me.getGander().startsWith( "m") ? "女" : "未知");
 
             System.out.println("---------------------------------------------------------");

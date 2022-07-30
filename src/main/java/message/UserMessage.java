@@ -18,6 +18,11 @@ public class UserMessage extends Message{
         this.uid = uid;
     }
 
+    public UserMessage(String uid,String name){
+        this.uid = uid;
+        this.name = name;
+    }
+
     public String getUid() {
         return uid;
     }

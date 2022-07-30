@@ -29,7 +29,7 @@ public class Storage {
         Connection con = db.getConn();
         PreparedStatement ps;
 
-        ps = con.prepareStatement("use member");
+        ps = con.prepareStatement("use members");
         ps.execute();
 
         ps = con.prepareStatement("insert into members.friends(first, second, first_uid, second_uid) values(?,?,?,?)");
@@ -48,28 +48,7 @@ public class Storage {
         //开摆
     }
 
-//    public static boolean storageAddAddFriend(ChannelHandlerContext ctx,RequestMessage msg) throws SQLException {
-//        DbUtil db = DbUtil.getDb();
-//        Connection con = db.getConn();
-//        PreparedStatement ps;
-//
-//        ps = con.prepareStatement("use member");
-//        ps.execute();
-//
-//        Date date = Date.valueOf(LocalDate.now());
-//        String str = msg.getRequestPerson().getName()+"请求加你为好友。";
-//
-//        ps = con.prepareStatement("insert into members.user_text(recipient_uid, send_uid, time, status, text,isAddFriend,addGroup) values(?,?,?,?,?,false,null)");
-//        ps.setObject(1,msg.getRecipientPerson().getUid());
-//        ps.setObject(2,msg.getRequestPerson().getName());
-//        ps.setObject(3,date);
-//        ps.setObject(4,true);
-//        ps.setObject(5,str);
-//        return !ps.execute();
-//
-//    }
-
-    public static  void storageRequestMessage(StringMessage msg,boolean addFriend,boolean status) throws SQLException {
+    public static  void storageRequestMessage(StringMessage msg,boolean addFriend,boolean status) throws SQLException {//addFriend 表示添加好友过程结束
         DbUtil db = DbUtil.getDb();
         Connection con = db.getConn();
         PreparedStatement ps;

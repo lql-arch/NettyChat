@@ -40,19 +40,30 @@ public class ChatServer {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
-                            ch.pipeline().addLast(new FrameDecoder());
+                            ch.pipeline().addFirst(new FrameDecoder());
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginMessage>(){
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, LoginMessage msg) throws Exception {
-                                    if(!processLogin.login(msg)){
+                                    if(!ProcessLogin.login(msg)){
                                         ctx.channel().writeAndFlush(new LoginStringMessage("password error!"));
                                     }else {
                                         if(msg.getIsLogin()) {
+                                            String uid = msg.getUid();
                                             Channel channel = ctx.channel();
-                                            channelUidMap.put(channel, msg.getUid());
-                                            uidChannelMap.put(msg.getUid(),channel);
-                                            log.info(msg.getUid() + "已登录");
-                                            ctx.channel().writeAndFlush(new LoginStringMessage("login success!"));
+                                            Channel channel1 = uidChannelMap.get(uid);
+                                            if(channel1 != null){
+                                                channelUidMap.remove(channel1,uid);
+                                                channelUidMap.put(channel,uid);
+                                                uidChannelMap.replace(uid,channel1,channel);
+                                                channel1.writeAndFlush(new LoginStringMessage("you have been pushed off the line"));
+                                                channel.writeAndFlush(new LoginStringMessage("someone is online!"));
+                                                channel1.close();
+                                            }else {
+                                                channelUidMap.put(channel, uid);
+                                                uidChannelMap.put(uid, channel);
+                                               channel.writeAndFlush(new LoginStringMessage("login success!"));
+                                            }
+                                            log.info(uid + "已登录");
                                         }else{
                                             ctx.channel().writeAndFlush(new LoginStringMessage("register success!" +
                                                     "你的uid为"+msg.getUid()));
@@ -76,7 +87,7 @@ public class ChatServer {
                                         ctx.channel().writeAndFlush(lm);
                                     }else if(str.startsWith("flush")){
                                         LoadMessage lm = LoadSystem.loadMessage(strings[1],3);
-                                        log.info("flush!");
+//                                        log.info("flush!");
                                         ctx.channel().writeAndFlush(lm);
                                     }
                                     else if(str.startsWith("singleLoad")){
@@ -90,8 +101,8 @@ public class ChatServer {
                                     Channel channel = ctx.channel();
                                     String uid =  channelUidMap.get(channel);
                                     //当有客户端断开连接的时候,就移除对应的通道
-//                                    channelUidMap.remove(uid,channel);
-//                                    uidChannelMap.remove(channel,uid);
+                                    channelUidMap.remove(channel,uid);
+                                    uidChannelMap.remove(uid,channel);
                                     super.channelInactive(ctx);
                                 }
 
@@ -154,6 +165,7 @@ public class ChatServer {
                                     if(channel != null) {
                                         channel.writeAndFlush(msg);
                                     }//在线
+//                                    log.debug(msg.getMessage());
                                     Storage.storageSingleMessage(msg);
                                 }
                             });
@@ -168,33 +180,40 @@ public class ChatServer {
                             });
 
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<RequestMessage>() {
+
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
-                                    if(Verify.verifyIsFriend(msg)){
-                                        ctx.channel().writeAndFlush(new RequestMessage(true));
-                                    }else{
-                                        //向对象发送确认消息
-                                        if(!msg.isConfirm()) {
-                                            if(!msg.isFriend()){//拒绝
-                                                String str = msg.getRecipientPerson().getName()+"拒绝了你的好友请求";
-                                                StringMessage sm = new StringMessage(msg.getRecipientPerson(),msg.getRequestPerson(),str, Timestamp.valueOf(LocalDateTime.now()));
-                                                ReviseMaterial.reviseAddFriendMsg(msg,false);
-                                                Storage.storageRequestMessage(sm,false,true);
-                                            }else {//isFriend以false开始保存添加信息到数据库
-                                                msg.setFriend(false);
-                                                msg.setConfirm(true);
-                                                String str = msg.getRequestPerson().getName()+"发起了好友申请";
-                                                StringMessage sm = new StringMessage(msg.getRequestPerson(),msg.getRecipientPerson(),str, Timestamp.valueOf(LocalDateTime.now()));
-                                                Storage.storageRequestMessage(sm,false,true);
+                                    if(msg.isClearMsg()){
+                                        ReviseMaterial.reviseRequest(msg);
+                                    }else {
+                                        if (Verify.verifyIsFriend(msg)) {
+                                            ctx.channel().writeAndFlush(new RequestMessage(true));
+                                        } else {
+                                            //向对象发送确认消息
+                                            if (!msg.isConfirm()) {
+                                                if (!msg.isFriend()) {//拒绝
+                                                    String str = msg.getRecipientPerson().getName() + "拒绝了你的好友请求";
+                                                    StringMessage sm = new StringMessage(msg.getRecipientPerson(), msg.getRequestPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
+                                                    ReviseMaterial.reviseAddFriendMsg(msg);
+                                                    Storage.storageRequestMessage(sm, true, true);//addFriend 表示添加好友过程结束
+                                                    ctx.channel().writeAndFlush(new RequestMessage(false));//阻塞用
+                                                } else {//isFriend以false开始保存添加信息到数据库
+                                                    log.debug(msg.isFriend()+" "+msg.isConfirm());
+                                                    String str = msg.getRequestPerson().getName() + "发起了好友申请";
+                                                    StringMessage sm = new StringMessage(msg.getRequestPerson(), msg.getRecipientPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
+                                                    Storage.storageRequestMessage(sm, false, true);
+                                                }
+                                            } else {//对方确认添加后添加消息到数据库
+                                                String str = msg.getRecipientPerson().getName() + "同意了你的好友请求";
+                                                StringMessage sm = new StringMessage(msg.getRecipientPerson(), msg.getRequestPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
+                                                ReviseMaterial.reviseAddFriendMsg(msg);//修改状态为已读
+                                                Storage.storageRequestMessage(sm, true, true);
+                                                Storage.storageBuildFriends(msg);//建立联系
+
+                                                sm.setMessage("我们已经是好友了！");
+                                                Storage.storageSingleMessage(sm);
+                                                ctx.channel().writeAndFlush(new RequestMessage(false));//阻塞用
                                             }
-                                        }else{//对方确认添加后将confirm改为false发送对方表示通知.
-                                            msg.setFriend(true);
-                                            msg.setConfirm(false);
-                                            String str = msg.getRecipientPerson().getName()+"同意了你的好友请求";
-                                            StringMessage sm = new StringMessage(msg.getRecipientPerson(),msg.getRequestPerson(),str, Timestamp.valueOf(LocalDateTime.now()));
-                                            ReviseMaterial.reviseAddFriendMsg(msg,true);//修改状态为已读
-                                            Storage.storageRequestMessage(sm,true,true);
-                                            Storage.storageBuildFriends(msg);//建立联系
                                         }
                                     }
                                 }

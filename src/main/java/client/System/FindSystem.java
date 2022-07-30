@@ -54,7 +54,6 @@ public class FindSystem {
             System.out.println("查无此人");
             return;
         }
-//        Start.count.await();
         extracted(ctx,me,user);
 
     }

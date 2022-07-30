@@ -16,11 +16,11 @@ public class ReviseMsgStatusMessage extends Message{
         this.date = time;
     }
 
-    public ReviseMsgStatusMessage(String myUid, String friendUid, Timestamp time){
-        this.friendUid = friendUid;
-        this.myUid = myUid;
-        this.date = time.toString();
-    }
+//    public ReviseMsgStatusMessage(String myUid, String friendUid, Timestamp time){
+//        this.friendUid = friendUid;
+//        this.myUid = myUid;
+//        this.date = time.toString();
+//    }
 
     public void setFriendUid(String friendUid) {
         this.friendUid = friendUid;

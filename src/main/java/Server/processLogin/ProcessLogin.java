@@ -6,7 +6,7 @@ import message.LoginMessage;
 import java.sql.*;
 import java.time.LocalDateTime;
 
-public class processLogin {
+public class ProcessLogin {
     static int uid = 100000;
     public static boolean find(String uid , String password) throws SQLException {
         DbUtil db = DbUtil.getDb();
@@ -80,7 +80,7 @@ public class processLogin {
         rs.next();
         String max = rs.getString("uid");
         if(max == null){
-            return String.valueOf(processLogin.uid);
+            return String.valueOf(ProcessLogin.uid);
         }
 
         return String.valueOf(Integer.getInteger(max)+1);

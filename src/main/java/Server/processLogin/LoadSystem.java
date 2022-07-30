@@ -27,7 +27,8 @@ public class LoadSystem{
         List<Chat_group> Group = new ArrayList<>();
         List<Chat_record> message = new ArrayList<>();
         Map<String,String> uidNameMap = new HashMap<>();
-
+        Map<String,String> nameUidMap = new HashMap<>();
+        int hasRequest = 0;//0:无消息，1：只有聊天消息，2：只有申请，3：有聊天和申请
 
         Date time = null;
         String gander;
@@ -49,6 +50,7 @@ public class LoadSystem{
             String friend = rs.getString("second");
             friends.add(friend);
             uidNameMap.put(friend_uid,friend);
+            nameUidMap.put(friend,friend_uid);
         }
 
 
@@ -68,7 +70,7 @@ public class LoadSystem{
             loadMessage.setTime(time);
         }
 
-        ps2 = conn.prepareStatement("select text,send_uid,time,status from members.user_text where recipient_uid = ? ");
+        ps2 = conn.prepareStatement("select text,send_uid,time,status from members.user_text where recipient_uid = ? and isAddFriend is null and addGroup is null");
         ps2.setObject(1, uid);
         rs = ps2.executeQuery();
         while (rs.next()) {
@@ -80,8 +82,34 @@ public class LoadSystem{
                 unread_message++;
             }
             Chat_record chat = new Chat_record(uid, send_uid, datetime, text, status);
+            chat.setType(0);
             message.add(chat);
         }
+        if(unread_message != 0){
+            hasRequest++;
+        }
+
+        //得到申请消息
+        ps2 = conn.prepareStatement("select text,send_uid,time,isAddFriend from members.user_text where recipient_uid = ? and isAddFriend is not null and status = true and addGroup is null");
+        ps2.setObject(1, uid);
+        rs = ps2.executeQuery();
+        while (rs.next()){
+            unread_message++;
+            String send_uid = rs.getString("send_uid");
+            String text = rs.getString("text");
+            Timestamp datetime = rs.getTimestamp("time");
+            boolean end = rs.getBoolean("isAddFriend");
+
+            Chat_record chat_record = new Chat_record(uid,send_uid,datetime,text,true);
+            if(!end)
+                chat_record.setType(1);
+            else
+                chat_record.setType(2);
+            hasRequest = (hasRequest == 0 || hasRequest == 2 ) ? 2 : 3 ;
+           message.add(chat_record);
+        }
+
+
 
         //得到自己的群聊信息
         Timestamp last_msg_time;
@@ -138,6 +166,8 @@ public class LoadSystem{
         }
 
 
+        loadMessage.setNameUidMap(nameUidMap);
+        loadMessage.setHasRequest(hasRequest);
         loadMessage.setMessage(message);//单聊消息
         loadMessage.setFriends(friends);
         loadMessage.setGroup(Group);
@@ -201,7 +231,15 @@ public class LoadSystem{
             if (status) {
                 unread_message++;
             }
-            Chat_record chat = new Chat_record(myUid, recipient_uid, send_uid, datetime, text, status);
+            Chat_record chat = new Chat_record();
+            chat.setUid(myUid);
+            chat.setRecipient_uid(recipient_uid);
+            chat.setSend_uid(send_uid);
+            chat.setText(text);
+            chat.setTime(datetime);
+            chat.setStatus(status);
+//            myUid, recipient_uid, send_uid, datetime.toString(), text, status
+
             message.add(chat);
         }
         return unread_message;

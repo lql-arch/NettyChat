@@ -9,6 +9,8 @@ public class Chat_record {
     private  String text ;
     private  String date;
     private boolean status;
+    private int type = 0;//0:聊天记录，1：申请好友记录，2：好友通知
+    public Chat_record(){}
 
     public Chat_record(String uid, String send_uid, Timestamp time, String text, boolean status ){
         this.uid = uid;
@@ -18,13 +20,25 @@ public class Chat_record {
         this.date = time.toString();
     }
 
-    public Chat_record(String uid,String recipient_uid, String send_uid, Timestamp time, String text, boolean status ){
-        this.uid = uid;
-        this.recipient_uid = recipient_uid;
-        this.send_uid = send_uid;
-        this.status = status;
-        this.text = text;
-        this.date = time.toString();
+//    public Chat_record(String uid,String recipient_uid, String send_uid, String time, String text, boolean status ){
+//        this.uid = uid;
+//        this.recipient_uid = recipient_uid;
+//        this.send_uid = send_uid;
+//        this.text = text;
+//        this.date = time.toString();
+//        this.status = status;
+//    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 
     public void setUid(String uid) {

@@ -12,6 +12,7 @@ public class LoadMessage extends Message{
     private String gid;
     private List<String> friends;
     private Map<String,String> uidNameMap;
+    private Map<String,String> nameUidMap;
     private List<Chat_group> Group;
     private List<Chat_record> message;
     private Integer unread_message;
@@ -21,6 +22,7 @@ public class LoadMessage extends Message{
 //    private Date build_time;
     private String date;
     private int status;//0:登录获取资料，1：好友聊天查询实时消息，2：群聊查询实时消息,4:刷新资料
+    private int hasRequest;//0:无消息，1：只有聊天消息，2：只有申请，3：有聊天和申请
 
     public LoadMessage(String id,int status){
         this.status = status;
@@ -41,6 +43,22 @@ public class LoadMessage extends Message{
     @Override
     public int getLength() {
         return 1;
+    }
+
+    public Map<String, String> getNameUidMap() {
+        return nameUidMap;
+    }
+
+    public void setNameUidMap(Map<String, String> nameUidMap) {
+        this.nameUidMap = nameUidMap;
+    }
+
+    public int getHasRequest() {
+        return hasRequest;
+    }
+
+    public void setHasRequest(int hasRequest) {
+        this.hasRequest = hasRequest;
     }
 
     public String getUid() {

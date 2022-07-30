@@ -23,8 +23,8 @@ public class Start {
     private  static final Logger log = LogManager.getLogger();
     private LoginMessage login;
     private static AtomicBoolean flag = new AtomicBoolean(false);
-    public static int unread_message = 0;
-    private  LoadMessage load;
+    public static int unread_message;
+    private volatile LoadMessage load;
     public static LoadMessage singleLoad;
     public static LoadMessage groupLoad;
     public static volatile UserMessage friend;
@@ -35,6 +35,7 @@ public class Start {
     public static List<StringMessage> message = new ArrayList<>();//登录后的未读消息
     public static AtomicBoolean singleFlag = new AtomicBoolean(false);
     public static Map<String,String> uidNameMap = new HashMap<>();
+    public static Map<String,String> nameUidMap = new HashMap<>();
 
 
     public void Begin() throws InterruptedException {
@@ -49,7 +50,7 @@ public class Start {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
-                            ch.pipeline().addLast(new FrameDecoder());
+                            ch.pipeline().addFirst(new FrameDecoder());
 //                            ch.pipeline().addLast(new ChannelDuplexHandler() {
 //                                // 用来触发特殊事件
 //                                @Override
@@ -72,7 +73,7 @@ public class Start {
                                 protected void channelRead0(ChannelHandlerContext ctx, LoginStringMessage msg) throws Exception {
                                     String str = msg.getMessage();
                                     String[] strings = str.split("!");
-                                    if (str.equals("password error")) {
+                                    if (strings[0].startsWith("password error")) {
                                         System.out.println(str);
                                         ctx.channel().writeAndFlush(new LoginStringMessage("err!"));
                                         ctx.channel().close();
@@ -85,6 +86,14 @@ public class Start {
                                         uid = login.getUid();
                                         ctx.channel().writeAndFlush(new LoginStringMessage("start!"+login.getUid()));
                                     }
+                                    if(str.startsWith("someone is online")){
+                                        System.out.println("已有人在线");
+                                        uid = login.getUid();
+                                        ctx.channel().writeAndFlush(new LoginStringMessage("start!"+login.getUid()));
+                                    }
+                                    if(str.startsWith("you have been pushed off the line")){
+                                        throw new Exception("你已被挤下线");
+                                    }
                                 }
 
                                 @Override
@@ -94,26 +103,46 @@ public class Start {
                                     }
                                     super.channelReadComplete(ctx);
                                 }
+
+                                @Override
+                                public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                                    System.out.println("你已下线");
+                                    ctx.channel().close();
+                                    super.channelInactive(ctx);
+                                }
+
+                                @Override
+                                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                                    cause.printStackTrace();
+                                    ctx.channel().close();
+                                    worker.shutdownGracefully();
+                                    System.exit(0);
+                                    super.exceptionCaught(ctx, cause);
+                                }
                             });
 
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoadMessage>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, LoadMessage msg) throws Exception {
+//                                    log.debug(msg.getUid()+" "+msg.getStatus());
                                     if(msg.getStatus() == 0) {
                                         load = msg;
                                         unread_message = msg.getUnread_message();
-                                        //FindSystem.addUidNameMap(load,uidNameMap);
+                                        uidNameMap = load.getUidNameMap();
+                                        nameUidMap = load.getNameUidMap();
                                         new Thread(() -> {
                                             try {
                                                 main_menu(ctx);
                                             } catch (Exception e) {
 //                                                System.err.println("main_menu exception end:"+e);
                                                 e.printStackTrace();
+//                                                ctx.channel().writeAndFlush(new LoginStringMessage("start!"+login.getUid()));
                                             }
                                         }).start();
                                     }
                                     if(msg.getStatus() == 1){
                                         singleLoad = msg;
+                                        semaphore.release();
                                     }
                                     if(msg.getStatus() == 2){
                                         groupLoad = msg;
@@ -121,6 +150,8 @@ public class Start {
                                     if(msg.getStatus() == 3){//flush
                                         load = msg;
                                         unread_message = msg.getUnread_message();
+                                        uidNameMap = load.getUidNameMap();
+                                        nameUidMap = load.getNameUidMap();
                                         semaphore.release();
                                     }
                                 }
@@ -169,16 +200,7 @@ public class Start {
                                     if(msg.isFriend()){
                                         System.err.println("你与目标已经是好友了！");
                                     }else{
-                                        if(!msg.isConfirm()){
-                                            //将好友信息添加到目前的好友队列中
-                                            String addName = load.getName().equals(msg.getRequestPerson().getName()) ? msg.getRecipientPerson().getName() : msg.getRequestPerson().getName();
-                                            load.addFriend(addName);
-                                        }
-                                            //确认是否添加好友，不添加将confirm改为false,isFriend也改为false
-                                            //写未读消息
-//                                            msg.setConfirm(false);
-//                                            msg.setFriend(false);
-//                                            ctx.writeAndFlush(msg);
+                                        semaphore.release();
                                     }
                                 }
                             });
@@ -227,7 +249,7 @@ public class Start {
 
     private void main_menu(ChannelHandlerContext ctx) throws Exception {
         while(true) {
-                ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+login.getUid()));
+                ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+uid));
                 semaphore.acquire();
                 System.out.println("\t----------------------------------------\t");
                 System.out.println("\t---------    1.好友            ---------\t");
