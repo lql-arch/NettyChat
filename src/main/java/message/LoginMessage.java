@@ -12,17 +12,17 @@ public class LoginMessage extends Message {
     private String gander;
     private String build_time;//Date
 
-    private boolean isLogin;
+    private boolean Login;
 
     private LoginMessage(String uid, String pass,boolean isLogin) {
         this.uid = uid;
         this.pass = pass;
-        this.isLogin = isLogin;
+        this.Login = isLogin;
     }
 
     private LoginMessage(String pass) {//注册用
         this.pass = pass;
-        this.isLogin = false;
+        this.Login = false;
     }
 
     public void setPass(String pass) {
@@ -34,11 +34,11 @@ public class LoginMessage extends Message {
     }
 
     public boolean isLogin() {
-        return isLogin;
+        return Login;
     }
 
     public void setLogin(boolean login) {
-        isLogin = login;
+        Login = login;
     }
 
     public String getUid() {
@@ -50,7 +50,7 @@ public class LoginMessage extends Message {
     }
 
     public boolean getIsLogin(){
-        return isLogin;
+        return Login;
     }
 
     public String getGander() {

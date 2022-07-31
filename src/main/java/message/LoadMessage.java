@@ -1,13 +1,15 @@
 package message;
 
+import com.alibaba.fastjson2.annotation.JSONField;
+import lombok.Data;
+
 import java.sql.Date;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Data
 public class LoadMessage extends Message{
-
     private String uid;
     private String gid;
     private List<String> friends;
@@ -23,8 +25,8 @@ public class LoadMessage extends Message{
     private String date;
     private int status;//0:登录获取资料，1：好友聊天查询实时消息，2：群聊查询实时消息,4:刷新资料
     private int hasRequest;//0:无消息，1：只有聊天消息，2：只有申请，3：有聊天和申请
-
-    public LoadMessage(String id,int status){
+    private Map<String, Boolean> blacklist;
+    public LoadMessage(String id, int status){
         this.status = status;
         if(status == 0 || status == 1) {
             this.uid = id;
@@ -35,6 +37,7 @@ public class LoadMessage extends Message{
         Group = new ArrayList<>();
         message = new ArrayList<>();
     }
+
     @Override
     public int getMessageType() {
         return LoadMessage;
@@ -43,6 +46,14 @@ public class LoadMessage extends Message{
     @Override
     public int getLength() {
         return 1;
+    }
+
+    public Map<String, Boolean> getBlacklist() {
+        return blacklist;
+    }
+
+    public void setBlacklist(Map<String, Boolean> blacklist) {
+        this.blacklist = blacklist;
     }
 
     public Map<String, String> getNameUidMap() {
@@ -84,6 +95,7 @@ public class LoadMessage extends Message{
         return unread_message;
     }
 
+    @JSONField(serialize = false)
     public Date getTime() {
         return Date.valueOf(date);
     }
@@ -151,6 +163,7 @@ public class LoadMessage extends Message{
         this.date = date;
     }//json
 
+    @JSONField(deserialize = false)
     public void setTime(Date build_time) {
         this.date = build_time.toString();
     }

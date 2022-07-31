@@ -9,7 +9,9 @@ import message.UserMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Scanner;
+import java.util.*;
+
+import static client.System.ChatSystem.isDigit;
 
 public class MaterialSystem {
     private  static final Logger log = LogManager.getLogger();
@@ -148,7 +150,7 @@ public class MaterialSystem {
         while(true) {
             System.out.println("请输入年龄");
             String ageStr = sc.nextLine();
-            if(!ChatSystem.isDigit(ageStr)){
+            if(!isDigit(ageStr)){
                 System.err.println("包含错误字符，请重新输入.");
                 continue;
             }
@@ -170,8 +172,92 @@ public class MaterialSystem {
         }
     }
 
-    public static void blacklist(LoadMessage load , ChannelHandlerContext ctx){
+    public static void blacklist(LoadMessage load , ChannelHandlerContext ctx) throws InterruptedException {
+        List<String> blacklist = new ArrayList<>();
+        for(String friend_uid : load.getFriends()){
+            if(load.getBlacklist().get(friend_uid)){
+                blacklist.add(friend_uid);
+            }
+        }
+        Map<String,String> map = new HashMap<>();
+        String choice;
+        while(true) {
+            int count = 1;
+            Iterator<String> iter = blacklist.iterator();
 
+            System.out.println("\t-------------------------------------------");
+            System.out.println("\t------------    我的黑名单   ----------------");
+            System.out.println("\t-------------------------------------------");
+            while (iter.hasNext()) {
+                String name_uid = iter.next();
+                map.put(String.valueOf(count), name_uid);
+                System.out.printf("\t\t" + (count++) + ".%20s\t\n", Start.uidNameMap.get(name_uid));
+            }
+            System.out.println("\t-------------------------------------------");
+            System.out.printf("\t\tnumber of pages:%d/%d\n", 1, 1);
+            System.out.println("\t-------------------------------------------");
+
+            while (true) {
+                System.out.println("请选择需要查看的好友：(输入'q'表示退出)");
+                choice = new Scanner(System.in).nextLine();
+                if (Objects.equals(choice, "q")) {
+                    return;
+                }
+                if (!isDigit(choice)) {
+                    System.err.println("输入错误。");
+                } else {
+                    String name_uid = map.get(choice);
+                    if(name_uid == null){
+                        System.err.println("输入错误");
+                    }else{
+                        blacklistSystem(ctx,name_uid);
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    public static void blacklistSystem(ChannelHandlerContext ctx,String uid) throws InterruptedException {
+        String myUid = Start.uid;
+        ctx.channel().writeAndFlush(new UserMessage(myUid));
+        Start.semaphore.acquire();
+        UserMessage me = Start.friend;
+
+        ctx.channel().writeAndFlush(new UserMessage(uid));
+        Start.semaphore.acquire();
+        UserMessage friend = Start.friend;
+
+        String t= (Objects.equals(friend.getGander(), "n") ? "男" : (Objects.equals(friend.getGander(), "m") ? "女" : "未知"));
+
+        System.out.println("----------------------------------------");
+        System.out.println("uid:" + friend.getUid());
+        System.out.println("用户名:" + friend.getName());
+        System.out.println("性别:" + t);
+        System.out.println("年龄:" + friend.getAge());
+        System.out.println("用户创建时间:" + friend.getBuild_time());
+        while (true) {
+            System.out.println("----------------------------------------");
+            System.out.println("1.移除黑名单\t2.返回\t");
+            System.out.println("----------------------------------------");
+            String choice = new Scanner(System.in).nextLine();//ctrl+d
+            if(choice == null){
+                continue;
+            }
+            if(choice.compareToIgnoreCase("1") == 0){
+                ReviseMessage rvm = new ReviseMessage();
+                rvm.setBlack(1);
+                rvm.setUid(Start.uid);
+                rvm.setFriend_uid(friend.getUid());
+                ctx.channel().writeAndFlush(rvm);
+                return;
+            }else if(choice.compareToIgnoreCase("2") == 0){
+                return;
+            }else{
+                System.err.println("输入错误");
+            }
+        }
     }
 
 }

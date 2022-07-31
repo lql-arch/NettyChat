@@ -1,8 +1,10 @@
 package Server.processLogin;
 
+import Server.ChatServer;
 import config.DbUtil;
 import message.FindMessage;
 import message.RequestMessage;
+import message.StringMessage;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -53,6 +55,25 @@ public class Verify {
         }
 
         return true;
+    }
+
+    public static boolean verifyBlack(StringMessage sm) throws SQLException {//查找接收方
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = conn.prepareStatement("select black from members.friends where first_uid = ? and second_uid = ?");
+        ps.setObject(1,sm.getFriend().getUid());
+        ps.setObject(2,sm.getMe().getUid());
+        ResultSet rs = ps.executeQuery();
+        if(rs.next() ){
+            boolean black = rs.getBoolean("black");
+            if(black){
+                ChatServer.addBlack(sm.getFriend().getUid(),sm.getMe().getUid());
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

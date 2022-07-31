@@ -1,6 +1,11 @@
 package Server.processLogin;
 
+import Server.ChatServer;
+import client.Start;
+import client.System.ChatSystem;
 import config.DbUtil;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import message.RequestMessage;
 import message.ReviseMsgStatusMessage;
 import message.ReviseMessage;
@@ -60,7 +65,7 @@ public class ReviseMaterial {
         PreparedStatement ps = con.prepareStatement("use members");
         ps.execute();
 
-        ps = con.prepareStatement("update members.user_text set status = false where status = true and time > ? and send_uid = ? and recipient_uid = ? and isAddFriend is null and addGroup is null");
+        ps = con.prepareStatement("update members.user_text set status = false where status = true and time < ? and send_uid = ? and recipient_uid = ? and isAddFriend is null and addGroup is null");
         ps.setObject(1,msg.getTime());
         ps.setObject(2,msg.getFriendUid());
         ps.setObject(3,msg.getMyUid());
@@ -92,6 +97,33 @@ public class ReviseMaterial {
 
         ps = conn.prepareStatement("update members.user_text set status = false  where isAddFriend = true and recipient_uid = ?");
         ps.setObject(1,msg.getRecipientPerson().getUid());
+        ps.execute();
+    }
+
+    public static boolean reviseBlack(ReviseMessage msg,boolean black) throws SQLException {
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = conn.prepareStatement("update members.friends set black = ? where first_uid = ? and second_uid = ?");
+        ps.setObject(1,black);
+        ps.setObject(2,msg.getUid());
+        ps.setObject(3,msg.getFriend_uid());
+        if(black)
+            ChatServer.addBlack(msg.getUid(),msg.getFriend_uid());
+        else
+            ChatServer.removeBlack(msg.getUid(),msg.getFriend_uid());
+
+        return !ps.execute();
+    }
+
+    public static void reviseOnline(String uid,boolean online) throws SQLException {
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = conn.prepareStatement("update members.user set online = ? where uid = ?");
+        ps.setObject(1,online);
+        ps.setObject(2,uid);
+
         ps.execute();
     }
 }

@@ -1,7 +1,14 @@
 package config;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.DefaultJSONParser;
+import com.alibaba.fastjson.parser.ObjectDeserializer;
+import com.alibaba.fastjson2.JSON;
 import com.google.gson.GsonBuilder;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Json {
     //谷歌GsonBuilder构造器
@@ -19,6 +26,17 @@ public class Json {
     //反序列化:使用Fastjson将字符串转成 POJO对象
     public static <T> T jsonToPojo(String json, Class<T>tClass)
     {
-        return JSONObject.parseObject(json, tClass);
+        T t = JSONObject.parseObject(json, tClass);
+        return t;
+    }
+
+    public static final class CustomerListSerializer implements ObjectDeserializer {
+
+        @Override
+        public <T> T deserialze(DefaultJSONParser defaultJSONParser, Type type, Object o) {
+            T t = null;
+           return t;
+        }
+
     }
 }

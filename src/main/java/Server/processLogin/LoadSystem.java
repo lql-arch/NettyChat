@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static Server.ChatServer.addBlack;
+
 public class LoadSystem{
     private static final Logger log = LogManager.getLogger(ChatServer.class);
     //读完后换标记(?)
@@ -27,14 +29,15 @@ public class LoadSystem{
         List<Chat_group> Group = new ArrayList<>();
         List<Chat_record> message = new ArrayList<>();
         Map<String,String> uidNameMap = new HashMap<>();
-        Map<String,String> nameUidMap = new HashMap<>();
+//        Map<String,String> nameUidMap = new HashMap<>();
+        Map<String, Boolean> black = new HashMap<>();
         int hasRequest = 0;//0:无消息，1：只有聊天消息，2：只有申请，3：有聊天和申请
 
         Date time = null;
         String gander;
         int age;
         String name;
-        Integer unread_message = 0;
+        int unread_message = 0;
 
         PreparedStatement ps2;
         ResultSet rs;
@@ -42,15 +45,18 @@ public class LoadSystem{
         ps1.execute();
 
         //得到好友的uid
-        ps2 = conn.prepareStatement("select second,second_uid from members.friends where first_uid = ?");
+        ps2 = conn.prepareStatement("select second,second_uid,black from members.friends where first_uid = ?");
         ps2.setObject(1,uid);
         rs = ps2.executeQuery();
         while(rs.next()){
             String friend_uid = rs.getString("second_uid");
             String friend = rs.getString("second");
-            friends.add(friend);
+            Boolean isBlack = rs.getBoolean("black");
+            friends.add(friend_uid);
             uidNameMap.put(friend_uid,friend);
-            nameUidMap.put(friend,friend_uid);
+            black.put(friend_uid,isBlack);
+            if(isBlack)
+                addBlack(uid,friend_uid);
         }
 
 
@@ -166,7 +172,8 @@ public class LoadSystem{
         }
 
 
-        loadMessage.setNameUidMap(nameUidMap);
+        loadMessage.setBlacklist(black);
+//        loadMessage.setNameUidMap(nameUidMap);
         loadMessage.setHasRequest(hasRequest);
         loadMessage.setMessage(message);//单聊消息
         loadMessage.setFriends(friends);
@@ -186,7 +193,7 @@ public class LoadSystem{
         ps = conn.prepareStatement("use members");
         ps.execute();
 
-        ps = conn.prepareStatement("select name,age,build_time,gander from members.user where uid = ?");
+        ps = conn.prepareStatement("select name,age,build_time,gander,online from members.user where uid = ?");
         ps.setObject(1,uid);
         rs = ps.executeQuery();
         while(rs.next()){
@@ -194,12 +201,13 @@ public class LoadSystem{
             user.setAge(rs.getInt("age"));
             user.setGander(rs.getString("gander"));
             user.setBuild_time(rs.getDate("build_time"));
+            user.setStatus(rs.getBoolean("online"));
         }
 
         return user;
     }
 
-    public static LoadMessage SingleChat(String myUid,String friendUid) throws SQLException {
+    public static LoadMessage SingleChat(String myUid) throws SQLException {
         //
         DbUtil db = DbUtil.getDb();
         Connection conn = db.getConn();
@@ -208,9 +216,8 @@ public class LoadSystem{
         LoadMessage loadMessage = new LoadMessage(myUid,1);
         List<Chat_record> message = new ArrayList<>();
 
-        ps = conn.prepareStatement("select text,recipient_uid,send_uid,time,status from members.user_text where recipient_uid = ? or send_uid = ?");
+        ps = conn.prepareStatement("select text,recipient_uid,send_uid,time,status from members.user_text where recipient_uid = ? and isAddFriend is null and addGroup is null");
         ps.setObject(1, myUid);
-        ps.setObject(2,friendUid);
         unread_message = getUnread_message(myUid, ps, unread_message, message);
 
         loadMessage.setMessage(message);

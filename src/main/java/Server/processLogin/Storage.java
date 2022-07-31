@@ -3,11 +3,14 @@ package Server.processLogin;
 import config.DbUtil;
 import message.RequestMessage;
 import message.StringMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 
 public class Storage {
+    private static final Logger log = LogManager.getLogger();
 
     public static void storageSingleMessage(StringMessage msg) throws SQLException {//存储单聊消息到数据库
         DbUtil db = DbUtil.getDb();

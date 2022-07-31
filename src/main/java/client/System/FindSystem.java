@@ -2,21 +2,14 @@ package client.System;
 
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
-import message.LoadMessage;
 import message.RequestMessage;
 import message.UserMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 public class FindSystem {
     private static final Logger log = LogManager.getLogger();
@@ -74,7 +67,8 @@ public class FindSystem {
             char choice = (char) new Scanner(System.in).nextByte();
             switch (choice) {
                 case 1:
-                    ctx.writeAndFlush(new RequestMessage(me,user));
+                    RequestMessage rm = new RequestMessage().setRequestPerson(me).setRecipientPerson(user).setAddOrDelete(true).setFriend(true);
+                    ctx.channel().writeAndFlush(rm);
                     break;
                 case 2:
                     return;
@@ -84,4 +78,7 @@ public class FindSystem {
             }
         }
     }
+
+
+
 }

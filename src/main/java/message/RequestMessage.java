@@ -1,69 +1,89 @@
 package message;
 
-public class RequestMessage extends Message{
+import com.alibaba.fastjson2.annotation.JSONField;
 
+public class RequestMessage extends Message{
+    private boolean clearMsg;
     private UserMessage requestPerson;
     private UserMessage recipientPerson;
-    private boolean isFriend;//判断是否已是好友
-    private boolean isConfirm;//双方确认添加好友
-    private boolean clearMsg = false;
+    private String notice;
+    private boolean Friend;//判断是否已是好友
+    private boolean Confirm;//双方确认添加好友
+    private boolean AddOrDelete;
+    //过程： true:add,false:delete
 
-    public RequestMessage(UserMessage recipientPerson){
-        this.recipientPerson = recipientPerson;
+    public RequestMessage(){}
+//    public RequestMessage(boolean isFriend){
+//        this.isFriend = isFriend;
+//        this.isConfirm = false;
+//    }
+//    public RequestMessage(UserMessage requestPerson,UserMessage recipientPerson,boolean isAddOrDelete){
+//        this.recipientPerson = recipientPerson;
+//        this.requestPerson = requestPerson;
+//        this.isFriend = true;
+//        this.isAddOrDelete = isAddOrDelete;
+//    }
+
+//    public RequestMessage(UserMessage requestPerson,UserMessage recipientPerson,boolean isConfirm,boolean isFriend){
+//        this.recipientPerson = recipientPerson;
+//        this.requestPerson = requestPerson;
+//        this.isConfirm = isConfirm;
+//        this.isFriend = isFriend;
+//    }
+
+    public String getNotice() {
+        return notice;
     }
-    public RequestMessage(boolean isFriend){
-        this.isFriend = isFriend;
-        this.isConfirm = false;
+
+    public RequestMessage setNotice(String notice) {
+        this.notice = notice;
+        return this;
     }
-    public RequestMessage(UserMessage requestPerson,UserMessage recipientPerson){
-        this.recipientPerson = recipientPerson;
+
+    public boolean isAddOrDelete() {
+        return AddOrDelete;
+    }
+
+    public RequestMessage setAddOrDelete(boolean addOrDelete) {
+        AddOrDelete = addOrDelete;
+        return this;
+    }
+
+    public RequestMessage setRequestPerson(message.UserMessage requestPerson) {
         this.requestPerson = requestPerson;
-        this.isConfirm = false;
-        this.isFriend = true;
+        return this;
     }
 
-    public RequestMessage(UserMessage requestPerson,UserMessage recipientPerson,boolean isConfirm,boolean isFriend){
+    public RequestMessage setRecipientPerson(message.UserMessage recipientPerson) {
         this.recipientPerson = recipientPerson;
-        this.requestPerson = requestPerson;
-        this.isConfirm = isConfirm;
-        this.isFriend = isFriend;
-    }
-
-    public void setRequestPerson(message.UserMessage requestPerson) {
-        this.requestPerson = requestPerson;
-    }
-
-    public void setRecipientPerson(message.UserMessage recipientPerson) {
-        this.recipientPerson = recipientPerson;
+        return this;
     }
 
     public boolean isClearMsg() {
         return clearMsg;
     }
 
-    public void setClearMsg(boolean clearMsg) {
-        this.clearMsg = clearMsg;
-    }
-
-    public RequestMessage SetClearMsg(boolean clearMsg) {
+    public RequestMessage setClearMsg(boolean clearMsg) {
         this.clearMsg = clearMsg;
         return this;
     }
 
-    public void setConfirm(boolean confirm) {
-        isConfirm = confirm;
+    public RequestMessage setConfirm(boolean confirm) {
+        Confirm = confirm;
+        return this;
     }
 
-    public void setFriend(boolean friend) {
-        isFriend = friend;
+    public RequestMessage setFriend(boolean friend) {
+        Friend = friend;
+        return this;
     }
 
     public boolean isConfirm() {
-        return isConfirm;
+        return Confirm;
     }
 
     public boolean isFriend() {
-        return isFriend;
+        return Friend;
     }
 
     public message.UserMessage getRecipientPerson() {

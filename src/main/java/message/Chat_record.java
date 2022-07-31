@@ -20,15 +20,6 @@ public class Chat_record {
         this.date = time.toString();
     }
 
-//    public Chat_record(String uid,String recipient_uid, String send_uid, String time, String text, boolean status ){
-//        this.uid = uid;
-//        this.recipient_uid = recipient_uid;
-//        this.send_uid = send_uid;
-//        this.text = text;
-//        this.date = time.toString();
-//        this.status = status;
-//    }
-
     public String getDate() {
         return date;
     }

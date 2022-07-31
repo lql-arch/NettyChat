@@ -2,12 +2,14 @@ package message;
 
 public class ReviseMessage extends Message{
     private String uid ;
+    private String friend_uid;
     private String name;
     private int age;
     private String gander;
     private String password;
     private boolean result;
-
+    private int black;//0:无，1：移除黑名单，2：移入黑名单
+    public ReviseMessage(){}
 
     public ReviseMessage(String uid,boolean result){
         this.uid = uid;
@@ -27,6 +29,22 @@ public class ReviseMessage extends Message{
         this.age = age;
         this.gander = null;
         this.password = null;
+    }
+
+    public String getFriend_uid() {
+        return friend_uid;
+    }
+
+    public void setFriend_uid(String friend_uid) {
+        this.friend_uid = friend_uid;
+    }
+
+    public int getBlack() {
+        return black;
+    }
+
+    public void setBlack(int black) {
+        this.black = black;
     }
 
     public void setUid(String uid) {

@@ -35,7 +35,7 @@ public class Start {
     public static List<StringMessage> message = new ArrayList<>();//登录后的未读消息
     public static AtomicBoolean singleFlag = new AtomicBoolean(false);
     public static Map<String,String> uidNameMap = new HashMap<>();
-    public static Map<String,String> nameUidMap = new HashMap<>();
+//    public static Map<String,String> nameUidMap = new HashMap<>();//注意一个name有多个uid
 
 
     public void Begin() throws InterruptedException {
@@ -129,7 +129,7 @@ public class Start {
                                         load = msg;
                                         unread_message = msg.getUnread_message();
                                         uidNameMap = load.getUidNameMap();
-                                        nameUidMap = load.getNameUidMap();
+//                                        nameUidMap = load.getNameUidMap();
                                         new Thread(() -> {
                                             try {
                                                 main_menu(ctx);
@@ -151,7 +151,7 @@ public class Start {
                                         load = msg;
                                         unread_message = msg.getUnread_message();
                                         uidNameMap = load.getUidNameMap();
-                                        nameUidMap = load.getNameUidMap();
+//                                        nameUidMap = load.getNameUidMap();
                                         semaphore.release();
                                     }
                                 }
@@ -182,16 +182,15 @@ public class Start {
                                         System.out.println("修改失败");
                                     }
                                     semaphore.release();
-//                                    count.countDown();
                                 }
                             });
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<StringMessage>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, StringMessage msg) throws Exception {
-                                    if(!singleFlag.get())
-                                        message.add(msg);
-                                    else
-                                        System.out.println(msg.getMe().getName()+":"+msg.getMessage());
+                                    if(singleFlag.get()) {
+                                        System.out.println(msg.getMe().getName() + ":" + msg.getMessage());
+                                    }
+                                    message.add(msg);
                                 }
                             });
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<RequestMessage>() {
@@ -200,6 +199,7 @@ public class Start {
                                     if(msg.isFriend()){
                                         System.err.println("你与目标已经是好友了！");
                                     }else{
+                                        System.out.println(msg.getNotice());
                                         semaphore.release();
                                     }
                                 }
@@ -220,12 +220,12 @@ public class Start {
     }
 
     private  void extracted(ChannelHandlerContext ctx) throws Exception {
-            System.out.println("\t----------------------------------\t");
-            System.out.println("\t---------       1.登录     --------\t");
-            System.out.println("\t--------- 2.快速登录(已弃用) --------\t");
-            System.out.println("\t---------       3.注册     --------\t");
-            System.out.println("\t---------       4.退出     --------\t");
-            System.out.println("\t-----------------------------------\t");
+            System.out.println("\t------------------------------------\t");
+            System.out.println("\t---------       1.登录     \t--------\t");
+            System.out.println("\t--------- 2.快速登录(已弃用) \t--------\t");
+            System.out.println("\t---------       3.注册     \t--------\t");
+            System.out.println("\t---------       4.退出     \t--------\t");
+            System.out.println("\t------------------------------------\t");
             char tmp = (char) new Scanner(System.in).nextByte();
             switch (tmp) {
                 case 1:
@@ -248,18 +248,23 @@ public class Start {
     }
 
     private void main_menu(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().writeAndFlush(new LoginStringMessage("singleLoad!"+uid));
+        semaphore.acquire();
         while(true) {
                 ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+uid));
                 semaphore.acquire();
-                System.out.println("\t----------------------------------------\t");
-                System.out.println("\t---------    1.好友            ---------\t");
-                System.out.println("\t---------    2.群聊            ---------\t");
-                System.out.println("\t---------    3.查询用户（uid）   ---------\t");
-                System.out.println("\t---------    4.未读消息(" + unread_message + ")     ---------\t");
-                System.out.println("\t---------    5.我的资料         ---------\t");
-                System.out.println("\t---------    6.黑名单           ---------\t");
-                System.out.println("\t---------    7.退出登录         ---------\t");
-                System.out.println("\t----------------------------------------\t");
+                System.out.println("\t-----------------------------------------\t");
+                System.out.println("\t              欢迎登录，"+load.getName());
+                System.out.println("\t-----------------------------------------\t");
+                System.out.println("\t---------    1.好友            \t---------\t");
+                System.out.println("\t---------    2.群聊            \t---------\t");
+                System.out.println("\t---------    3.查询用户（uid） \t---------\t");
+                System.out.println("\t---------    4.未读消息(" + unread_message + ")     \t---------\t");
+                System.out.println("\t---------    5.我的资料        \t---------\t");
+                System.out.println("\t---------    6.黑名单          \t---------\t");
+                System.out.println("\t---------    7.退出登录        \t---------\t");
+                System.out.println("\t---------    8.刷新            \t---------\t");
+                System.out.println("\t-----------------------------------------\t");
             char tmp = (char) new Scanner(System.in).nextByte();
             switch (tmp) {
                 case 1:
@@ -283,6 +288,8 @@ public class Start {
                 case 7:
                     ctx.channel().close();
                     return;
+                case 8:
+                    break;
                 default:
                     System.out.println("输入错误，请重新尝试");
                     break;

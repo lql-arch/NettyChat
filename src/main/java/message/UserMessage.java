@@ -13,6 +13,7 @@ public class UserMessage extends Message{
 //    private Date build_time;
     private String data;
     private String gander;
+    private boolean status;
 
     public UserMessage(String uid){
         this.uid = uid;
@@ -21,6 +22,14 @@ public class UserMessage extends Message{
     public UserMessage(String uid,String name){
         this.uid = uid;
         this.name = name;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
+
+    public void setStatus(boolean status) {
+        this.status = status;
     }
 
     public String getUid() {
