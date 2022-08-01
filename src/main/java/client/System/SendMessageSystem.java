@@ -1,19 +1,22 @@
 package client.System;
 
+import client.SimpleChannelHandler.FileMsgHandler;
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
-import message.Chat_record;
-import message.ReviseMsgStatusMessage;
-import message.StringMessage;
-import message.UserMessage;
+import io.netty.channel.EventLoop;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
+import java.io.*;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
 
 public class SendMessageSystem {
     private static final Logger log = LogManager.getLogger(SendMessageSystem.class);
@@ -103,6 +106,19 @@ public class SendMessageSystem {
     }
 
     public static void sendFileUser(ChannelHandlerContext ctx, UserMessage me, UserMessage friend){
+        System.out.println("-------------------------------------");
+        System.out.println("\t\t\t\t传输文件");
+        System.out.println("-------------------------------------");
+        System.out.println("请输入您要传输的文件地址：");
+        String pass = new Scanner(System.in).nextLine();
+        File file = new File(pass);
+        if(!file.exists()){
+            if (!file.isFile()) {
+                System.out.println("Not a file :" + file);
+                return;
+            }
+        }
+        FileMsgHandler.sendFile(ctx,file);
 
     }
 

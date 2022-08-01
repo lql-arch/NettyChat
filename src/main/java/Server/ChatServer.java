@@ -1,5 +1,6 @@
 package Server;
 
+import Server.SimpleChannelHandler.FileMsgHandler;
 import config.DbUtil;
 import Server.processLogin.*;
 import config.Decode;
@@ -252,6 +253,7 @@ public class ChatServer {
                                     }
                                 }
                             });
+                            ch.pipeline().addLast(new FileMsgHandler());
 
                         }
                     }).bind(8100);

@@ -16,12 +16,12 @@ public class ChatSystem {
     private static final Logger log = LogManager.getLogger();
     //添加黑名单，在线状态
     public synchronized static void friendSystem(LoadMessage load, ChannelHandlerContext ctx) throws InterruptedException, IOException {
-        ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+Start.uid));
-        semaphore.acquire();
-        List<String> friends = load.getFriends();
-        Map<String,String> map = new HashMap<>();
-        String choice;
         while(true) {
+            ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+Start.uid));
+            semaphore.acquire();
+            List<String> friends = load.getFriends();
+            Map<String,String> map = new HashMap<>();
+            String choice;
             Iterator<String> iter = friends.iterator();
             int count = 1;
             //分页未实现
@@ -30,6 +30,10 @@ public class ChatSystem {
             System.out.println("\t-------------------------------------------");
             while (iter.hasNext()) {
                 String name_uid = iter.next();
+                if(name_uid == null || Start.uidNameMap.get(name_uid) == null){
+                    System.out.println("检测到好友变化!");
+                    break;
+                }
                 if(load.getBlacklist().get(name_uid)){
                     continue;
                 }
@@ -94,7 +98,7 @@ public class ChatSystem {
             System.out.println("用户状态:" + (friend.isStatus() ? "online" : " not online"));
             while (!flag) {
                 System.out.println("----------------------------------------");
-                System.out.println("1.发送消息\t2.发送文件 \t3.加入黑名单\t4.删除好友\t5.返回\t");
+                System.out.println("1.发送消息\t2.发送文件\t3.查询历史消息\t4.加入黑名单\t5.删除好友\t6.返回\t");
                 System.out.println("----------------------------------------");
                 String choice =  new Scanner(System.in).nextLine();
                 switch (choice) {
@@ -107,17 +111,19 @@ public class ChatSystem {
                         flag = true;
                         break;
                     case "3":
-                        ReviseMessage rvm = new ReviseMessage();
-                        rvm.setBlack(2);
-                        rvm.setUid(Start.uid);
-                        rvm.setFriend_uid(friend.getUid());
-                        ctx.channel().writeAndFlush(rvm);
-                        semaphore.acquire();
+
                         break;
                     case "4":
-                        DeleteSystem.deleteFriend(ctx,me,friend);
-                        return;
+                        if(DeleteSystem.removeBlackFriend(ctx,me,friend))
+                            return;
+                        else
+                            break;
                     case "5":
+                        if(DeleteSystem.deleteFriend(ctx,me,friend))
+                            return;
+                        else
+                            break;
+                    case "6":
                         return;
                     default:
                         System.err.println("Error:无此选项,请重新输入.");
@@ -138,7 +144,8 @@ public class ChatSystem {
             System.out.println("--------        1.好友消息("+normal+")    \t---------");
             System.out.println("--------        2.申请消息("+Request+")   \t---------");
             System.out.println("--------        3.群消息         \t---------");
-            System.out.println("--------        4.返回           \t---------");
+            System.out.println("--------        4.文件信息       \t---------");
+            System.out.println("--------        5.返回           \t---------");
             System.out.println("---------------------------------------------");
             String choice = new Scanner(System.in).nextLine();
             switch (choice) {
@@ -149,8 +156,12 @@ public class ChatSystem {
                     unreadRequestMsg(ctx,load);
                     break;
                 case "3":
+                    unreadGroupMag(ctx,load);
                     break;
                 case "4":
+                    fileMag(ctx);
+                    break;
+                case "5":
                     return;
                 default:
                     System.err.println("Error:无此选项,请重新输入.");
@@ -268,4 +279,12 @@ public class ChatSystem {
         ctx.channel().writeAndFlush(new RequestMessage().setClearMsg(true).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setAddOrDelete(true));
     }
 
+
+    public static void unreadGroupMag(ChannelHandlerContext ctx,LoadMessage load){
+
+    }
+
+    public static void fileMag(ChannelHandlerContext ctx){
+
+    }
 }
