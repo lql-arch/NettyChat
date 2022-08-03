@@ -2,6 +2,7 @@ package Server;
 
 import Server.SimpleChannelHandler.FileMsgHandler;
 import Server.SimpleChannelHandler.FileReadHandler;
+import Server.SimpleChannelHandler.FindHistoricalNews;
 import config.DbUtil;
 import Server.processLogin.*;
 import config.Decode;
@@ -107,6 +108,9 @@ public class ChatServer {
                                     else if(str.startsWith("singleLoad")){
                                         log.info("读取单聊信息："+strings[1]);
                                         ctx.channel().writeAndFlush(LoadSystem.SingleChat(strings[1]));
+                                    }else if(str.startsWith("group")){
+                                        log.info("读取群聊消息："+strings[1]);
+                                        ctx.channel().writeAndFlush(LoadSystem.GroupChat(strings[1]));
                                     }
                                 }
                                 @Override
@@ -256,6 +260,7 @@ public class ChatServer {
                             });
                             ch.pipeline().addLast(new FileMsgHandler(uidChannelMap,channelUidMap));
                             ch.pipeline().addLast(new FileReadHandler());
+                            ch.pipeline().addLast(new FindHistoricalNews());
 
                         }
                     }).bind(8100);

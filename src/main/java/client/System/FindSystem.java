@@ -1,15 +1,22 @@
 package client.System;
 
+import client.SimpleChannelHandler.FindHistoricalNews;
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
+import message.Chat_record;
+import message.HistoricalNews;
 import message.RequestMessage;
 import message.UserMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Scanner;
+
+import static client.Start.uid;
 
 public class FindSystem {
     private static final Logger log = LogManager.getLogger();
@@ -79,8 +86,72 @@ public class FindSystem {
         }
     }
 
-    public static void myHistoricalNews(ChannelHandlerContext ctx, UserMessage me, UserMessage friend){
+    public static void myHistoricalNews(ChannelHandlerContext ctx, UserMessage me, UserMessage friend) throws InterruptedException {
+        String date;
+        Scanner sc = new Scanner(System.in);
+        Timestamp start;
+        Timestamp end;
+
+        while(true) {
+            System.out.println("----------------------------------------");
+            System.out.println("\t\t\t\t请输入想要查找的时间:(year-month-day),(exit退出)");
+            date = sc.nextLine();
+            System.out.println("----------------------------------------");
+            if(date.compareToIgnoreCase("exit") == 0){
+                return;
+            }
+            try {
+                String[] dates = date.split("-");
+                start = Timestamp.valueOf(date + " 08:00:00");
+                dates[2] = String.valueOf(Integer.parseInt(dates[2]) + 1);
+                end = Timestamp.valueOf(dates[0] + "-" + dates[1] + "-" + dates[2] + " 08:00:00");
+            }catch (Exception e){
+                System.err.println("输入错误");
+                continue;
+            }
+
+            HistoricalNews hn = new HistoricalNews();
+            hn.setStartTime(start.toString());
+            hn.setEndTime(end.toString());
+            hn.setFriendUid(friend.getUid());
+            hn.setUid(uid);
+            hn.setPersonOrGroup(true);
+
+            ctx.writeAndFlush(hn);
+            Start.semaphore.acquire();
+
+            showHistoricalNews(me,friend);
+        }
 
     }
 
+    public static void showHistoricalNews(UserMessage me, UserMessage friend){
+        HistoricalNews hn = FindHistoricalNews.historicalNews;
+        Iterator<Chat_record> iter = hn.getChat_record().listIterator();
+        Timestamp one = null;
+        Timestamp second = null;
+        if(hn.getChat_record() == null){
+            System.out.println("----------------------------------------");
+            System.out.println("null");
+            System.out.println("----------------------------------------");
+            return;
+        }
+
+        System.out.println("----------------------------------------");
+        while(iter.hasNext()){
+            Chat_record cr = iter.next();
+            if(one == null){
+                one = cr.getTime();
+                System.out.println("\t\t"+one);
+            }else{
+                one = cr.getTime();
+                if(one.getNanos() - second.getNanos() > 1000*60*60){
+                    System.out.println("\t\t"+one);
+                }
+            }
+            System.out.println(cr.getSend_uid()+":"+cr.getText());
+            second = one;
+        }
+        System.out.println("----------------------------------------");
+    }
 }

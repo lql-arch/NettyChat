@@ -250,8 +250,9 @@ public class LoadSystem{
         return unread_message;
     }
 
-    public static LoadMessage GroupChat(String gid){
-        LoadMessage loadMessage = new LoadMessage(gid,2);
+    public static LoadMessage GroupChat(String uid){
+        LoadMessage loadMessage = new LoadMessage(uid,2);
+
 
 
         return loadMessage;
@@ -288,4 +289,48 @@ public class LoadSystem{
         }
     }
 
+    public static void loadHistory(HistoricalNews msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        List<Chat_record> crs = new ArrayList<>();
+
+        ps = con.prepareStatement("select time, text from members.user_text where isAddFriend is null and addGroup is null and file = false and recipient_uid = ? and send_uid = ? and time >= ? and time < ? ");
+        ps.setObject(1,msg.getFriendUid());
+        ps.setObject(2,msg.getUid());
+        ps.setObject(3,Timestamp.valueOf(msg.getStartTime()));
+        ps.setObject(4,Timestamp.valueOf(msg.getEndTime()));
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            String recipient_uid = msg.getFriendUid();
+            String send_uid = msg.getUid();
+            String time = rs.getTimestamp("time").toString();
+            String text = rs.getString("text");
+            Chat_record cr = new Chat_record();
+            cr.setDate(time);
+            cr.setText(text);
+            cr.setSend_uid(send_uid);
+            cr.setRecipient_uid(recipient_uid);
+            crs.add(cr);
+        }
+
+        ps = con.prepareStatement("select time, text from members.user_text where isAddFriend is null and addGroup is null and file = false and recipient_uid = ? and send_uid = ?");
+        ps.setObject(1,msg.getUid());
+        ps.setObject(2,msg.getFriendUid());
+        rs = ps.executeQuery();
+        while(rs.next()){
+            String recipient_uid = msg.getUid();
+            String send_uid = msg.getFriendUid();
+            String time = rs.getTimestamp("time").toString();
+            String text = rs.getString("text");
+            Chat_record cr = new Chat_record();
+            cr.setDate(time);
+            cr.setText(text);
+            cr.setSend_uid(send_uid);
+            cr.setRecipient_uid(recipient_uid);
+            crs.add(cr);
+        }
+
+        msg.setChat_record(crs);
+
+    }
 }

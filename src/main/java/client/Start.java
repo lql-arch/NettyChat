@@ -2,10 +2,10 @@ package client;
 
 import client.SimpleChannelHandler.FileMsgHandler;
 import client.SimpleChannelHandler.FileReadHandler;
+import client.SimpleChannelHandler.FindHistoricalNews;
 import client.System.ChatSystem;
 import client.System.FindSystem;
 import client.System.MaterialSystem;
-import client.System.SendMessageSystem;
 import config.Decode;
 import config.Encode;
 import config.FrameDecoder;
@@ -209,6 +209,7 @@ public class Start {
                             });
                             ch.pipeline().addLast(new FileMsgHandler());
                             ch.pipeline().addLast(new FileReadHandler());
+                            ch.pipeline().addLast(new FindHistoricalNews());
 
                         }
                     }).connect("127.0.0.1", 8100);
@@ -276,7 +277,7 @@ public class Start {
                     ChatSystem.friendSystem(load,ctx);
                     break;
                 case 2:
-                    ChatSystem.groupSystem(load,ctx);
+                    ChatSystem.groupSystem(ctx);
                     break;
                 case 3:
                     FindSystem.FindUid(ctx);

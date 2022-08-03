@@ -72,10 +72,6 @@ public class ChatSystem {
         }
     }
 
-    public static void groupSystem(LoadMessage load, ChannelHandlerContext ctx){
-
-    }
-
     private static void friendMaterial(String uid, ChannelHandlerContext ctx) throws InterruptedException, IOException {
         String myUid = Start.uid;
         ctx.channel().writeAndFlush(new UserMessage(myUid));
@@ -157,7 +153,7 @@ public class ChatSystem {
                     unreadRequestMsg(ctx,load);
                     break;
                 case "3":
-                    unreadGroupMag(ctx,load);
+                    unreadGroupMag(ctx);
                     break;
                 case "4":
                     fileMsg(ctx,null,true);
@@ -279,11 +275,6 @@ public class ChatSystem {
         ctx.channel().writeAndFlush(new RequestMessage().setClearMsg(true).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setAddOrDelete(true));
     }
 
-
-    public static void unreadGroupMag(ChannelHandlerContext ctx,LoadMessage load){
-
-    }
-
     public static void fileMsg(ChannelHandlerContext ctx,String friend_uid,boolean isPub) throws InterruptedException {
         while(true) {
             ctx.writeAndFlush(new FileRead().setCheckFile(true).setUid(uid));
@@ -329,7 +320,7 @@ public class ChatSystem {
                     fm.setMe(new UserMessage(fileRead.getFilePersonMap().get(name)));
                     fm.setUser(new UserMessage(uid));
                     fm.setStartPos(0);
-                    fm.setPath(null);//标志
+                    fm.setPath(null);//标志物
 
                     ctx.writeAndFlush(fm.setReadOrWrite(true));
                     break;
@@ -337,4 +328,17 @@ public class ChatSystem {
             }
         }
     }
+
+    public static void groupSystem(ChannelHandlerContext ctx){
+        ctx.channel().writeAndFlush(new LoginStringMessage("group!"+Start.uid));
+        System.out.println("---------------------------------------------");
+        System.out.println("");
+        System.out.println("---------------------------------------------");
+
+    }
+
+    public static void unreadGroupMag(ChannelHandlerContext ctx){
+
+    }
+
 }

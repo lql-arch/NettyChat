@@ -11,7 +11,6 @@ import java.util.Map;
 @Data
 public class LoadMessage extends Message{
     private String uid;
-    private String gid;
     private List<String> friends;
     private Map<String,String> uidNameMap;
     private Map<String,String> nameUidMap;
@@ -28,11 +27,7 @@ public class LoadMessage extends Message{
     private Map<String, Boolean> blacklist;
     public LoadMessage(String id, int status){
         this.status = status;
-        if(status == 0 || status == 1) {
-            this.uid = id;
-        }else if(status == 2){
-            this.gid = id;
-        }
+        this.uid = id;
         friends = new ArrayList<>();
         Group = new ArrayList<>();
         message = new ArrayList<>();
@@ -74,9 +69,6 @@ public class LoadMessage extends Message{
 
     public String getUid() {
         return uid;
-    }
-    public String getGid() {
-        return gid;
     }
 
     public List<String> getFriends() {
@@ -138,10 +130,6 @@ public class LoadMessage extends Message{
 
     public void setUid(String uid) {
         this.uid = uid;
-    }
-
-    public void setGid(String gid) {
-        this.gid = gid;
     }
 
     public void setFriends(List<String> friends) {
