@@ -17,13 +17,6 @@ public class StringMessage extends Message {
         this.friend = friend;
         this.date = date;
     }
-//    public StringMessage(UserMessage me, UserMessage friend, String message, Timestamp date) {
-//        this.message = message;
-//        this.me = me;
-//        this.friend = friend;
-//        this.date = date.toString();
-//    }
-
     public void setMessage(String message) {
         this.message = message;
     }

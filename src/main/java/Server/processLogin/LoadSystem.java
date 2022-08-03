@@ -2,14 +2,12 @@ package Server.processLogin;
 
 import config.DbUtil;
 import Server.ChatServer;
-import message.LoadMessage;
-import message.Chat_group;
-import message.Chat_record;
-import message.UserMessage;
+import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -257,6 +255,21 @@ public class LoadSystem{
 
 
         return loadMessage;
+    }
+
+    public static FileRead loadFile(FileMessage msg) throws SQLException {
+        Connection con = DbUtil.loginMysql().getConn();
+        FileRead fileRead = new FileRead();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("select sender_uid,file_name,time from members.store_file where recipient_uid = ?;");
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            fileRead.addFilePersonMap(rs.getString("file_name"),rs.getString("sender_uid"));
+            fileRead.addFileTimeMap(rs.getString("file_name"),rs.getTimestamp("time"));
+        }
+
+        return fileRead;
     }
 
 }

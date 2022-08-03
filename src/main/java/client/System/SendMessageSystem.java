@@ -118,7 +118,7 @@ public class SendMessageSystem {
                 return;
             }
         }
-        FileMsgHandler.sendFile(ctx,file);
+        FileMsgHandler.sendFile(ctx,file,me,friend);
 
     }
 

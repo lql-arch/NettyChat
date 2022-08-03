@@ -5,6 +5,8 @@ import com.alibaba.fastjson.parser.DefaultJSONParser;
 import com.alibaba.fastjson.parser.ObjectDeserializer;
 import com.alibaba.fastjson2.JSON;
 import com.google.gson.GsonBuilder;
+import message.FileMessage;
+import message.Message;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -28,15 +30,5 @@ public class Json {
     {
         T t = JSONObject.parseObject(json, tClass);
         return t;
-    }
-
-    public static final class CustomerListSerializer implements ObjectDeserializer {
-
-        @Override
-        public <T> T deserialze(DefaultJSONParser defaultJSONParser, Type type, Object o) {
-            T t = null;
-           return t;
-        }
-
     }
 }

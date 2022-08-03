@@ -1,6 +1,7 @@
 package client.System;
 
 
+import client.SimpleChannelHandler.FileReadHandler;
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
 import message.*;
@@ -10,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.util.*;
 
-import static client.Start.semaphore;
+import static client.Start.*;
 
 public class ChatSystem {
     private static final Logger log = LogManager.getLogger();
@@ -136,7 +137,7 @@ public class ChatSystem {
 
     public static void unreadMessage(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException {
         while(true){
-            ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+load.getUid()));
+            ctx.writeAndFlush(new LoginStringMessage("flush!"+load.getUid()));
             semaphore.acquire();
             String normal = (load.getHasRequest() != 0 && load.getHasRequest() != 2) ? "new" : " " ;
             String Request = (load.getHasRequest() != 0 && load.getHasRequest() != 1) ? "new" : " " ;
@@ -159,7 +160,7 @@ public class ChatSystem {
                     unreadGroupMag(ctx,load);
                     break;
                 case "4":
-                    fileMag(ctx);
+                    fileMsg(ctx,null,true);
                     break;
                 case "5":
                     return;
@@ -284,7 +285,45 @@ public class ChatSystem {
 
     }
 
-    public static void fileMag(ChannelHandlerContext ctx){
+    public static void fileMsg(ChannelHandlerContext ctx,String friend_uid,boolean isPub) throws InterruptedException {
+        ctx.writeAndFlush(new FileRead().setCheckFile(true));
+        semaphore.acquire();
+        FileRead fileRead = FileReadHandler.fileRead;
+        Map<String,String> time = fileRead.getFileTimeMap();
+        Map<Integer,String> countMap = new HashMap<>();
+        int count = 1;
+
+        System.out.println("---------------------------------------------");
+        System.out.printf("%5s\t%20s\t%20s\t%20s\n","id","file_name","file_sender","file_time");
+        for (Map.Entry<String, String> person: fileRead.getFilePersonMap().entrySet()){
+            String name = uidNameMap.get(person.getValue());
+            if(!isPub && !Objects.equals(friend_uid, person.getValue()))
+                continue;
+            if(person.getValue() == null)
+                continue;
+            countMap.put(count, person.getKey());
+            System.out.printf("%5d\t%20s\t%20s\t%20s\n",count++,person.getKey(),name,time.get(person.getKey()));
+        }
+        System.out.println("---------------------------------------------");
+
+        while(true) {
+            String choice = new Scanner(System.in).nextLine();
+            if (!isDigit(choice)) {
+                System.err.println("输入错误");
+                continue;
+            }
+            int result = Integer.parseInt(choice);
+            if (result < count && result > 0){
+                FileMessage fm = new FileMessage();
+                String name = countMap.get(result);
+                fm.setName(name);
+                fm.setTime(time.get(name));
+                fm.setMe(new UserMessage(fileRead.getFilePersonMap().get(name)));
+                fm.setUser(new UserMessage(uid));
+
+                ctx.writeAndFlush(fm.setReadOrWrite(true));
+            }
+        }
 
     }
 }

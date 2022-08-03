@@ -1,6 +1,7 @@
 package client;
 
 import client.SimpleChannelHandler.FileMsgHandler;
+import client.SimpleChannelHandler.FileReadHandler;
 import client.System.ChatSystem;
 import client.System.FindSystem;
 import client.System.MaterialSystem;
@@ -207,6 +208,7 @@ public class Start {
                                 }
                             });
                             ch.pipeline().addLast(new FileMsgHandler());
+                            ch.pipeline().addLast(new FileReadHandler());
 
                         }
                     }).connect("127.0.0.1", 8100);

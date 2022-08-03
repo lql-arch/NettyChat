@@ -1,0 +1,47 @@
+package Server.processLogin;
+
+import io.netty.channel.ChannelHandlerContext;
+import message.FileMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.sql.SQLException;
+
+import static Server.processLogin.Storage.storageFiles;
+
+public class FileTransfer {
+    private static final Logger log = LogManager.getLogger();
+    public static void storeFiles(ChannelHandlerContext ctx, FileMessage msg, String file_dir) throws FileNotFoundException, SQLException {
+        int readLen = msg.getEndPos();
+        int start = msg.getStartPos();
+        boolean status = false;
+        String path = file_dir + File.separator + msg.getName();
+        if(start == 0)
+            storageFiles(msg.getName(),path,msg, false);
+
+        byte[] bytes = msg.getBytes();
+        File file = new File(path);
+        try(RandomAccessFile raf = new RandomAccessFile(file, "rw");){
+            raf.seek(start);
+            raf.write(bytes);
+            start += readLen ;
+            msg.setStartPos(start);
+            if(msg.getFileLen() - start <= 0){
+                status = true;
+            }
+            if(readLen > 0){
+                ctx.writeAndFlush(msg);
+            }else{
+                log.debug("读入完毕");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        if(status)
+            storageFiles(msg.getName(),path,msg, true);
+    }
+}

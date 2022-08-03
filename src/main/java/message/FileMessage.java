@@ -9,10 +9,21 @@ import java.io.File;
 public class FileMessage extends Message{
 
     private String name;
-    private File file;
+    private String path;
+    private long fileLen;
     private byte[] bytes;
     private int startPos;
     private int endPos;
+    private boolean person = true;
+    private UserMessage user;
+    private UserMessage me;
+    private String time;
+    private boolean readOrWrite;//true = read , false = write
+
+    public FileMessage setReadOrWrite(boolean readOrWrite){
+        this.readOrWrite = readOrWrite;
+        return this;
+    }
 
     @Override
     public int getMessageType() {

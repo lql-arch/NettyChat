@@ -1,13 +1,21 @@
 package Server.processLogin;
 
 import config.DbUtil;
+import io.netty.channel.ChannelHandlerContext;
+import message.FileMessage;
 import message.RequestMessage;
 import message.StringMessage;
+import message.UserMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Storage {
     private static final Logger log = LogManager.getLogger();
@@ -69,4 +77,44 @@ public class Storage {
 
         ps.execute();
     }
+
+    public static void storageFiles(String name,String path,FileMessage msg,boolean status) throws SQLException {
+        DbUtil db = DbUtil.getDb();
+        Connection con = db.getConn();
+        PreparedStatement ps;
+
+        UserMessage me = msg.getMe();
+        UserMessage user = msg.getUser();
+
+        if(!status) {
+            ps = con.prepareStatement("insert into members.store_file(sender_uid,recipient_uid,file_name,file_path,status,time) values(?,?,?,?,?,?)");
+            ps.setObject(1, me.getUid());
+            ps.setObject(2, user.getUid());
+            ps.setObject(3,name);
+            ps.setObject(4, path);
+            ps.setObject(5, false);
+            ps.setObject(6,Timestamp.valueOf(LocalDateTime.now()));
+            ps.execute();
+        }else {
+            ps = con.prepareStatement("update members.store_file set status = true where file_path = ? and sender_uid = ? and file_name = ?");
+            ps.setObject(1,path);
+            ps.setObject(2,me.getUid());
+            ps.setObject(3,name);
+        }
+
+    }
+
+    public static void storageFileMsg(StringMessage msg) throws SQLException {
+        DbUtil db = DbUtil.getDb();
+        Connection con = db.getConn();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("insert into members.user_text(recipient_uid, send_uid, time, status, text, isAddFriend, addGroup, file) values(?,?,?,?,?,null,null,true)");
+        ps.setObject(1,msg.getFriend().getUid());
+        ps.setObject(2,msg.getMe().getUid());
+        ps.setObject(3,msg.getTime());
+        ps.setObject(4,true);
+        ps.setObject(5,msg.getMessage());
+    }
+
 }
