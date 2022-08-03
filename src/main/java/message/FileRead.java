@@ -8,10 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Data
-public class FileRead extends FileMessage{
+public class FileRead extends Message{
 
     private Map<String ,String> filePersonMap;
     private Map<String ,String> fileTimeMap;
+    private String uid;
     private boolean checkFile;
 
     public FileRead addFilePersonMap(String file,String person){
@@ -35,7 +36,22 @@ public class FileRead extends FileMessage{
         return this;
     }
 
+    public FileRead setUid(String uid){
+        this.uid = uid;
+        return this;
+    }
+
     public int getType(){
         return FileRead;
+    }
+
+    @Override
+    public int getMessageType() {
+        return FileRead;
+    }
+
+    @Override
+    public int getLength() {
+        return 0;
     }
 }

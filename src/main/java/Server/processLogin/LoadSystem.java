@@ -257,12 +257,13 @@ public class LoadSystem{
         return loadMessage;
     }
 
-    public static FileRead loadFile(FileMessage msg) throws SQLException {
+    public static FileRead loadFile(FileRead msg) throws SQLException {
         Connection con = DbUtil.loginMysql().getConn();
         FileRead fileRead = new FileRead();
         PreparedStatement ps;
 
         ps = con.prepareStatement("select sender_uid,file_name,time from members.store_file where recipient_uid = ?;");
+        ps.setObject(1,msg.getUid());
         ResultSet rs = ps.executeQuery();
         while(rs.next()){
             fileRead.addFilePersonMap(rs.getString("file_name"),rs.getString("sender_uid"));
@@ -270,6 +271,21 @@ public class LoadSystem{
         }
 
         return fileRead;
+    }
+
+    public static void loadReadFile(FileMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+//        log.debug(msg.getName()+" "+msg.getMe().getUid()+" "+msg.getTime());
+        ps = con.prepareStatement("select file_path from members.store_file where file_name = ? and sender_uid = ? and time = ?");
+        ps.setObject(1,msg.getName());
+        ps.setObject(2,msg.getMe().getUid());
+        ps.setObject(3,Timestamp.valueOf(msg.getTime()));
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            msg.setPath(rs.getString("file_path"));
+        }
     }
 
 }

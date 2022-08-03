@@ -79,6 +79,8 @@ public class FindSystem {
         }
     }
 
+    public static void myHistoricalNews(ChannelHandlerContext ctx, UserMessage me, UserMessage friend){
 
+    }
 
 }

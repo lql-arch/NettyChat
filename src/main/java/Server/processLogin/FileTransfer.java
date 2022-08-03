@@ -44,4 +44,32 @@ public class FileTransfer {
         if(status)
             storageFiles(msg.getName(),path,msg, true);
     }
+
+    public static void transferFile(ChannelHandlerContext ctx, FileMessage msg)  {
+        File file = new File(msg.getPath());
+        try(RandomAccessFile raf = new RandomAccessFile(file,"r")){
+            raf.seek(msg.getStartPos());
+            int read;
+            int lastLength;
+            if (file.length() < 1024) {
+                lastLength = (int) file.length();
+            } else {
+                int length = (int) (Math.min((file.length() / 10), 1024 * 2));
+                lastLength = length < (file.length() - msg.getStartPos()) ? length : (int) (file.length() - msg.getStartPos());
+            }
+            byte[] bytes = new byte[lastLength];
+
+            if((read = raf.read(bytes)) != -1 && lastLength > 0 ){
+                msg.setEndPos(read);
+                msg.setFileLen(file.length());
+                msg.setBytes(bytes);
+                ctx.writeAndFlush(msg);
+            }else{
+                log.debug("文件读取完毕");
+            }
+
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
 }

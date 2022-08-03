@@ -115,6 +115,7 @@ public class Storage {
         ps.setObject(3,msg.getTime());
         ps.setObject(4,true);
         ps.setObject(5,msg.getMessage());
+        ps.execute();
     }
 
 }

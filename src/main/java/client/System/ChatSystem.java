@@ -112,7 +112,7 @@ public class ChatSystem {
                         flag = true;
                         break;
                     case "3":
-
+                        FindSystem.myHistoricalNews(ctx,me,friend);
                         break;
                     case "4":
                         if(DeleteSystem.removeBlackFriend(ctx,me,friend))
@@ -137,7 +137,7 @@ public class ChatSystem {
 
     public static void unreadMessage(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException {
         while(true){
-            ctx.writeAndFlush(new LoginStringMessage("flush!"+load.getUid()));
+            ctx.writeAndFlush(new LoginStringMessage("flush!"+uid));
             semaphore.acquire();
             String normal = (load.getHasRequest() != 0 && load.getHasRequest() != 2) ? "new" : " " ;
             String Request = (load.getHasRequest() != 0 && load.getHasRequest() != 1) ? "new" : " " ;
@@ -178,7 +178,6 @@ public class ChatSystem {
             int count = 1;
             List<Chat_record> crs = load.getMessage();
             Map<String,String> uidNameMap = load.getUidNameMap();
-//            List<Chat_group> group = load.getGroup();
             Map<String,String> countUidMap = new HashMap<>();
             Map<String, Integer> uidSet  = new HashMap<>();//发出消息的好友
 
@@ -286,44 +285,56 @@ public class ChatSystem {
     }
 
     public static void fileMsg(ChannelHandlerContext ctx,String friend_uid,boolean isPub) throws InterruptedException {
-        ctx.writeAndFlush(new FileRead().setCheckFile(true));
-        semaphore.acquire();
-        FileRead fileRead = FileReadHandler.fileRead;
-        Map<String,String> time = fileRead.getFileTimeMap();
-        Map<Integer,String> countMap = new HashMap<>();
-        int count = 1;
-
-        System.out.println("---------------------------------------------");
-        System.out.printf("%5s\t%20s\t%20s\t%20s\n","id","file_name","file_sender","file_time");
-        for (Map.Entry<String, String> person: fileRead.getFilePersonMap().entrySet()){
-            String name = uidNameMap.get(person.getValue());
-            if(!isPub && !Objects.equals(friend_uid, person.getValue()))
-                continue;
-            if(person.getValue() == null)
-                continue;
-            countMap.put(count, person.getKey());
-            System.out.printf("%5d\t%20s\t%20s\t%20s\n",count++,person.getKey(),name,time.get(person.getKey()));
-        }
-        System.out.println("---------------------------------------------");
-
         while(true) {
-            String choice = new Scanner(System.in).nextLine();
-            if (!isDigit(choice)) {
-                System.err.println("输入错误");
-                continue;
-            }
-            int result = Integer.parseInt(choice);
-            if (result < count && result > 0){
-                FileMessage fm = new FileMessage();
-                String name = countMap.get(result);
-                fm.setName(name);
-                fm.setTime(time.get(name));
-                fm.setMe(new UserMessage(fileRead.getFilePersonMap().get(name)));
-                fm.setUser(new UserMessage(uid));
+            ctx.writeAndFlush(new FileRead().setCheckFile(true).setUid(uid));
+            semaphore.acquire();
+            FileRead fileRead = FileReadHandler.fileRead;
+            Map<String, String> time = fileRead.getFileTimeMap();
+            Map<Integer, String> countMap = new HashMap<>();
+            int count = 1;
 
-                ctx.writeAndFlush(fm.setReadOrWrite(true));
+            System.out.println("---------------------------------------------");
+            System.out.println("\t\t\t输入\"quit\"返回");
+            System.out.println("---------------------------------------------");
+            System.out.printf("%5s\t%20s\t%20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
+            for (Map.Entry<String, String> person : fileRead.getFilePersonMap().entrySet()) {
+                String name = uidNameMap.get(person.getValue());
+                if (!isPub && !Objects.equals(friend_uid, person.getValue()))
+                    continue;
+                if (person.getValue() == null)
+                    continue;
+                if(Start.load.getBlacklist().get(person.getValue())){
+                    continue;
+                }
+                countMap.put(count, person.getKey());
+                System.out.printf("%5d\t%20s\t%20s\t%20s\n", count++, person.getKey(), name, time.get(person.getKey()));
+            }
+            System.out.println("---------------------------------------------");
+
+            while (true) {
+                String choice = new Scanner(System.in).nextLine();
+                if (choice.compareToIgnoreCase("quit") == 0) {
+                    return;
+                }
+                if (!isDigit(choice)) {
+                    System.err.println("输入错误");
+                    continue;
+                }
+                int result = Integer.parseInt(choice);
+                if (result < count && result > 0) {
+                    FileMessage fm = new FileMessage();
+                    String name = countMap.get(result);
+                    fm.setName(name);
+                    fm.setTime(time.get(name));
+                    fm.setMe(new UserMessage(fileRead.getFilePersonMap().get(name)));
+                    fm.setUser(new UserMessage(uid));
+                    fm.setStartPos(0);
+                    fm.setPath(null);//标志
+
+                    ctx.writeAndFlush(fm.setReadOrWrite(true));
+                    break;
+                }
             }
         }
-
     }
 }

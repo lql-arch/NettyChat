@@ -9,14 +9,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
 public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     private static final Logger log = LogManager.getLogger();
-
-    private static final NioEventLoopGroup group = new NioEventLoopGroup(1);
-    public static FileMessage fm = new FileMessage();
+    private static final String file_dir = "/home/bronya/userFile";
 
 
     public static void sendFile(ChannelHandlerContext ctx, File file,UserMessage me, UserMessage user){
@@ -36,6 +35,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 fm.setEndPos(read);
                 fm.setUser(user);
                 fm.setMe(me);
+                fm.setPerson(true);
                 ctx.writeAndFlush(fm.setReadOrWrite(false));
             }else{
                 System.out.println("文件已读完");
@@ -46,10 +46,33 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         }
     }
 
+    public static void receiveFiles(ChannelHandlerContext ctx, FileMessage msg){
+        int readLen = msg.getEndPos();
+        int start = msg.getStartPos();
+        String path = file_dir + File.separator + msg.getName();
+
+        byte[] bytes = msg.getBytes();
+        File file = new File(path);
+        try(RandomAccessFile raf = new RandomAccessFile(file,"rw")){
+            raf.seek(start);
+            raf.write(bytes);
+            start += readLen;
+            msg.setStartPos(start);
+            if(readLen > 0){
+                ctx.writeAndFlush(msg);
+            }else{
+                log.debug("写入完毕");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FileMessage msg) throws Exception {
         if(msg.isReadOrWrite()){
-
+            receiveFiles(ctx,msg);
             return;
         }
         if(msg.getStartPos() != -1){

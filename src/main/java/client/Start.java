@@ -27,7 +27,7 @@ public class Start {
     private LoginMessage login;
     private static AtomicBoolean flag = new AtomicBoolean(false);
     public static int unread_message;
-    private volatile LoadMessage load;
+    public static volatile LoadMessage load;
     public static LoadMessage singleLoad;
     public static LoadMessage groupLoad;
     public static volatile UserMessage friend;
@@ -127,12 +127,10 @@ public class Start {
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoadMessage>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, LoadMessage msg) throws Exception {
-//                                    log.debug(msg.getUid()+" "+msg.getStatus());
                                     if(msg.getStatus() == 0) {
                                         load = msg;
                                         unread_message = msg.getUnread_message();
                                         uidNameMap = load.getUidNameMap();
-//                                        nameUidMap = load.getNameUidMap();
                                         new Thread(() -> {
                                             try {
                                                 main_menu(ctx);
@@ -192,6 +190,8 @@ public class Start {
                                 protected void channelRead0(ChannelHandlerContext ctx, StringMessage msg) throws Exception {
                                     if(singleFlag.get()) {
                                         System.out.println(msg.getMe().getName() + ":" + msg.getMessage());
+                                    }else if(msg.isDirect()){
+                                        System.out.println(msg.getMessage());
                                     }
                                     message.add(msg);
                                 }
