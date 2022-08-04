@@ -15,7 +15,6 @@ import static client.Start.*;
 
 public class ChatSystem {
     private static final Logger log = LogManager.getLogger();
-    //添加黑名单，在线状态
     public synchronized static void friendSystem(LoadMessage load, ChannelHandlerContext ctx) throws InterruptedException, IOException {
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+Start.uid));
@@ -153,7 +152,7 @@ public class ChatSystem {
                     unreadRequestMsg(ctx,load);
                     break;
                 case "3":
-                    unreadGroupMag(ctx);
+                    GroupSystem.unreadGroupMsg(ctx);
                     break;
                 case "4":
                     fileMsg(ctx,null,true);
@@ -328,17 +327,4 @@ public class ChatSystem {
             }
         }
     }
-
-    public static void groupSystem(ChannelHandlerContext ctx){
-        ctx.channel().writeAndFlush(new LoginStringMessage("group!"+Start.uid));
-        System.out.println("---------------------------------------------");
-        System.out.println("");
-        System.out.println("---------------------------------------------");
-
-    }
-
-    public static void unreadGroupMag(ChannelHandlerContext ctx){
-
-    }
-
 }

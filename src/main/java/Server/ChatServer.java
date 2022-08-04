@@ -3,6 +3,7 @@ package Server;
 import Server.SimpleChannelHandler.FileMsgHandler;
 import Server.SimpleChannelHandler.FileReadHandler;
 import Server.SimpleChannelHandler.FindHistoricalNews;
+import Server.SimpleChannelHandler.LoadGroupNewsHandler;
 import config.DbUtil;
 import Server.processLogin.*;
 import config.Decode;
@@ -261,6 +262,7 @@ public class ChatServer {
                             ch.pipeline().addLast(new FileMsgHandler(uidChannelMap,channelUidMap));
                             ch.pipeline().addLast(new FileReadHandler());
                             ch.pipeline().addLast(new FindHistoricalNews());
+                            ch.pipeline().addLast(new LoadGroupNewsHandler());
 
                         }
                     }).bind(8100);

@@ -1,13 +1,12 @@
 package Server.processLogin;
 
-import config.DbUtil;
 import Server.ChatServer;
+import config.DbUtil;
 import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
-import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,10 +23,8 @@ public class LoadSystem{
         Connection conn = db.getConn();
         LoadMessage loadMessage = new LoadMessage(uid,ver);
         List<String> friends = new ArrayList<>();
-        List<Chat_group> Group = new ArrayList<>();
         List<Chat_record> message = new ArrayList<>();
         Map<String,String> uidNameMap = new HashMap<>();
-//        Map<String,String> nameUidMap = new HashMap<>();
         Map<String, Boolean> black = new HashMap<>();
         int hasRequest = 0;//0:无消息，1：只有聊天消息，2：只有申请，3：有聊天和申请
 
@@ -114,68 +111,10 @@ public class LoadSystem{
         }
 
 
-
-        //得到自己的群聊信息
-        Timestamp last_msg_time;
-        ps1 = conn.prepareStatement("use chat_group");
-        ps1.execute();
-
-        ps2 = conn.prepareStatement("select gid,last_msg_id from chat_group.group_user where uid = ?");
-        ps2.setObject(1,uid);
-        rs = ps2.executeQuery();
-        while(rs.next()) {
-            Chat_group group = new Chat_group();
-
-            String gid = rs.getString("gid");
-            last_msg_time = rs.getTimestamp("last_msg_id");
-            group.setLast_msg_time(last_msg_time.toString());
-            group.setGid(gid);
-
-            ps2 = conn.prepareStatement("select group_name,create_time from chat_group.`group` where gid = ?");
-            ps2.setObject(1,gid);
-            ResultSet rs1 = ps2.executeQuery();
-            if(rs1.next()) {
-                group.setGroupName(rs1.getString("group_name"));
-                group.setTime(rs1.getDate("creat_time"));
-            }
-
-            //获取群聊消息(unread限制没写)
-            ps2 = conn.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time > ? ");
-            ps2.setObject(1,gid);
-            ps2.setObject(2,last_msg_time);
-            rs1 = ps2.executeQuery();
-            while (rs1.next()) {
-                String rg_uid = rs1.getString("uid");
-                String rg_test = rs1.getString("text");
-                Timestamp ts = rs1.getTimestamp("time");
-                group.addMsg(group.setContent(rg_uid, rg_test,ts));
-            }
-
-            ps2 = conn.prepareStatement("select administrator,group_master,uid from chat_group.group_user where gid = ?");
-            ps2.setObject(1,gid);
-            rs1 = ps2.executeQuery();
-            while (rs1.next()){
-                String rg_uid = rs1.getString("uid");
-                group.addMembers(rg_uid);
-                 if(rs1.getBoolean("administrator")){
-                    group.addAdministrator(uid);
-                 }else if(rs1.getBoolean("group_master")){
-                     group.setGroup_master(uid);
-                 }else {
-                     group.addMembers(uid);
-                 }
-            }
-
-            Group.add(group);
-        }
-
-
         loadMessage.setBlacklist(black);
-//        loadMessage.setNameUidMap(nameUidMap);
         loadMessage.setHasRequest(hasRequest);
         loadMessage.setMessage(message);//单聊消息
         loadMessage.setFriends(friends);
-        loadMessage.setGroup(Group);
         loadMessage.setUnread_message(unread_message);
         loadMessage.setUidNameMap(uidNameMap);
         return loadMessage;
@@ -248,14 +187,6 @@ public class LoadSystem{
             message.add(chat);
         }
         return unread_message;
-    }
-
-    public static LoadMessage GroupChat(String uid){
-        LoadMessage loadMessage = new LoadMessage(uid,2);
-
-
-
-        return loadMessage;
     }
 
     public static FileRead loadFile(FileRead msg) throws SQLException {
@@ -332,5 +263,96 @@ public class LoadSystem{
 
         msg.setChat_record(crs);
 
+    }
+
+    public static LoadMessage GroupChat(String uid) throws SQLException {
+        LoadMessage loadMessage = new LoadMessage(uid,2);
+        Connection con = DbUtil.getDb().getConn();
+
+        PreparedStatement ps;
+        ResultSet rs;
+
+        List<Chat_group> chat_groups = new ArrayList<>();
+        int messages = 0;
+
+        ps = con.prepareStatement("select gid from chat_group.group_user where uid = ?");
+        ps.setObject(1,uid);
+        rs = ps.executeQuery();
+        while(rs.next()){
+            Chat_group group = new Chat_group();
+            String gid = rs.getString("gid");
+            Timestamp lastTime = rs.getTimestamp("last_msg_id");
+
+            group.setLast_msg_time(lastTime.toString());
+            group.setGid(gid);
+
+            ps = con.prepareStatement("select group_name,create_time,members_num from chat_group.`group` where gid = ?");
+            ps.setObject(1,gid);
+            ResultSet rs1 = ps.executeQuery();
+            if(rs1.next()) {
+                group.setGroupName(rs1.getString("group_name"));
+                group.setTime(rs1.getTimestamp("creat_time"));
+                group.setMembersNum(rs1.getInt("members_num"));
+            }
+
+            //获取群聊消息(unread限制没写)
+            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time > ? ");
+            ps.setObject(1,gid);
+            ps.setObject(2,lastTime);
+            rs1 = ps.executeQuery();
+            if(rs1.next()) {//先读取时，读取是否有消息，进入群聊后在详细读取
+                messages++;
+                group.setMessage(1);//有消息
+            }
+
+            ps = con.prepareStatement("select administrator,group_master,uid from chat_group.group_user where gid = ?");
+            ps.setObject(1,gid);
+            rs1 = ps.executeQuery();
+            while (rs1.next()){
+                String rg_uid = rs1.getString("uid");
+                if(rs1.getBoolean("administrator")){
+                    group.addAdministrator(rg_uid);
+                }else if(rs1.getBoolean("group_master")){
+                    group.setGroup_master(rg_uid);
+                }else {
+                    group.addMembers(rg_uid);
+                }
+            }
+
+            chat_groups.add(group);
+        }
+
+        loadMessage.setGroupMessage(messages);
+        loadMessage.setGroup(chat_groups);
+
+        return loadMessage;
+    }
+
+    public static LoadGroupMessage loadGroupMessages(String gid,Timestamp last_time) throws SQLException {
+        LoadGroupMessage lgm = new LoadGroupMessage();
+        Connection con = DbUtil.getDb().getConn();
+
+        PreparedStatement ps;
+        ResultSet rs;
+
+        List<GroupChat_text> gcts = new ArrayList<>();
+
+        ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ?");
+        ps.setObject(1,gid);
+        ps.setObject(2,last_time);
+        rs = ps.executeQuery();
+        while(rs.next()){
+            String rg_uid = rs.getString("uid");
+            String rg_test = rs.getString("text");
+            Timestamp ts = rs.getTimestamp("time");
+            GroupChat_text gct = new GroupChat_text();
+            gct.setTime(ts);
+            gct.setUid(rg_uid);
+            gct.setText(rg_test);
+            gcts.add(gct);
+        }
+
+        lgm.setGroupMessages(gcts);
+        return lgm;
     }
 }

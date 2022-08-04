@@ -154,4 +154,8 @@ public class FindSystem {
         }
         System.out.println("----------------------------------------");
     }
+
+    public static void findGroup(ChannelHandlerContext ctx){
+
+    }
 }

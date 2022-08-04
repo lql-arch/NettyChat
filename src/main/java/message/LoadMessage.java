@@ -25,6 +25,9 @@ public class LoadMessage extends Message{
     private int status;//0:登录获取资料，1：好友聊天查询实时消息，2：群聊查询实时消息,4:刷新资料
     private int hasRequest;//0:无消息，1：只有聊天消息，2：只有申请，3：有聊天和申请
     private Map<String, Boolean> blacklist;
+
+    private int groupMessage;
+
     public LoadMessage(String id, int status){
         this.status = status;
         this.uid = id;

@@ -3,8 +3,10 @@ package client;
 import client.SimpleChannelHandler.FileMsgHandler;
 import client.SimpleChannelHandler.FileReadHandler;
 import client.SimpleChannelHandler.FindHistoricalNews;
+import client.SimpleChannelHandler.LoadGroupNewsHandler;
 import client.System.ChatSystem;
 import client.System.FindSystem;
+import client.System.GroupSystem;
 import client.System.MaterialSystem;
 import config.Decode;
 import config.Encode;
@@ -38,7 +40,6 @@ public class Start {
     public static List<StringMessage> message = new ArrayList<>();//登录后的未读消息
     public static AtomicBoolean singleFlag = new AtomicBoolean(false);
     public static Map<String,String> uidNameMap = new HashMap<>();
-//    public static Map<String,String> nameUidMap = new HashMap<>();//注意一个name有多个uid
 
 
     public void Begin() throws InterruptedException {
@@ -137,7 +138,6 @@ public class Start {
                                             } catch (Exception e) {
 //                                                System.err.println("main_menu exception end:"+e);
                                                 e.printStackTrace();
-//                                                ctx.channel().writeAndFlush(new LoginStringMessage("start!"+login.getUid()));
                                             }
                                         }).start();
                                     }
@@ -147,6 +147,7 @@ public class Start {
                                     }
                                     if(msg.getStatus() == 2){
                                         groupLoad = msg;
+                                        semaphore.release();
                                     }
                                     if(msg.getStatus() == 3){//flush
                                         load = msg;
@@ -210,6 +211,7 @@ public class Start {
                             ch.pipeline().addLast(new FileMsgHandler());
                             ch.pipeline().addLast(new FileReadHandler());
                             ch.pipeline().addLast(new FindHistoricalNews());
+                            ch.pipeline().addLast(new LoadGroupNewsHandler());
 
                         }
                     }).connect("127.0.0.1", 8100);
@@ -232,20 +234,20 @@ public class Start {
             System.out.println("\t---------       3.注册     \t--------\t");
             System.out.println("\t---------       4.退出     \t--------\t");
             System.out.println("\t------------------------------------\t");
-            char tmp = (char) new Scanner(System.in).nextByte();
+            String tmp = new Scanner(System.in).nextLine();
             switch (tmp) {
-                case 1:
+                case "1":
                     login = LoginMessage.LoginUser();
                     ctx.channel().writeAndFlush(login);
                     flag.compareAndSet(false, true);
                     break;
-                case 2:
+                case "2":
                     break;
-                case 3:
+                case "3":
                     login = LoginMessage.register();
                     ctx.channel().writeAndFlush(login);
                     break;
-                case 4:
+                case "4":
                     ctx.channel().close();
                     break;
                 default:
@@ -271,30 +273,30 @@ public class Start {
                 System.out.println("\t---------    7.退出登录        \t---------\t");
                 System.out.println("\t---------    8.刷新            \t---------\t");
                 System.out.println("\t-----------------------------------------\t");
-            char tmp = (char) new Scanner(System.in).nextByte();
+            String tmp = new Scanner(System.in).nextLine();
             switch (tmp) {
-                case 1:
+                case "1":
                     ChatSystem.friendSystem(load,ctx);
                     break;
-                case 2:
-                    ChatSystem.groupSystem(ctx);
+                case "2":
+                    GroupSystem.groupSystem(ctx);
                     break;
-                case 3:
+                case "3":
                     FindSystem.FindUid(ctx);
                     break;
-                case 4:
+                case "4":
                     ChatSystem.unreadMessage(ctx,load);
                     break;
-                case 5:
+                case "5":
                     MaterialSystem.myMaterial(load,ctx);
                     break;
-                case 6:
+                case "6":
                     MaterialSystem.blacklist(load,ctx);
                     break;
-                case 7:
+                case "7":
                     ctx.channel().close();
                     return;
-                case 8:
+                case "8":
                     break;
                 default:
                     System.out.println("输入错误，请重新尝试");
