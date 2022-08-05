@@ -1,9 +1,6 @@
 package Server;
 
-import Server.SimpleChannelHandler.FileMsgHandler;
-import Server.SimpleChannelHandler.FileReadHandler;
-import Server.SimpleChannelHandler.FindHistoricalNews;
-import Server.SimpleChannelHandler.LoadGroupNewsHandler;
+import Server.SimpleChannelHandler.*;
 import config.DbUtil;
 import Server.processLogin.*;
 import config.Decode;
@@ -263,6 +260,7 @@ public class ChatServer {
                             ch.pipeline().addLast(new FileReadHandler());
                             ch.pipeline().addLast(new FindHistoricalNews());
                             ch.pipeline().addLast(new LoadGroupNewsHandler());
+                            ch.pipeline().addLast(new FindGroupHandler());
 
                         }
                     }).bind(8100);

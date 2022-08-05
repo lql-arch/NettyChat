@@ -17,7 +17,7 @@ public class MaterialSystem {
     private  static final Logger log = LogManager.getLogger();
     public static void myMaterial(LoadMessage load, ChannelHandlerContext ctx) throws InterruptedException {
         while(true) {
-            boolean flag = false;
+            boolean flag = true;
             ctx.channel().writeAndFlush(new UserMessage(Start.uid));
             Start.semaphore.acquire();
             UserMessage me = Start.friend;
@@ -30,30 +30,34 @@ public class MaterialSystem {
             System.out.println("\t性别:" + t);
             System.out.println("\t年龄:" + me.getAge());
             System.out.println("\t用户创建时间:" + me.getBuild_time());
-            while (!flag) {
+            while (flag) {
             System.out.println("---------------------------------------------------------");
             System.out.println("\t1.返回\t2.修改密码\t3.修改用户名\n" +
                                 "\t4.修改性别选项\t5.修改年龄\t6.再次显示界面");
             System.out.println("---------------------------------------------------------");
-                flag = false;
-                char choice = (char) new Scanner(System.in).nextByte();
-                switch (choice) {
+                String choice = new Scanner(System.in).next();
+                if (!isDigit(choice)) {
+                    System.err.println("输入错误");
+                    continue;
+                }
+                int result = Integer.parseInt(choice);
+                switch (result) {
                     case 1:
                         return;
                     case 2:
-                        revisePassword(load.getUid(),ctx);
+                        revisePassword(load.getUid(), ctx);
                         break;
                     case 3:
-                        reviseName(load.getUid(),ctx);
+                        reviseName(load.getUid(), ctx);
                         break;
                     case 4:
-                        reviseGander(load.getUid(),ctx);
+                        reviseGander(load.getUid(), ctx);
                         break;
                     case 5:
-                        reviseAge(load.getUid(),ctx);
+                        reviseAge(load.getUid(), ctx);
                         break;
                     case 6:
-                        flag = true;
+                        flag = false;
                         break;
                     default:
                         System.err.println("Error:无此选项,请重新输入.");

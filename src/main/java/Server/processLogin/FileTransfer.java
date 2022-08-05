@@ -18,7 +18,6 @@ public class FileTransfer {
     public static void storeFiles(ChannelHandlerContext ctx, FileMessage msg, String file_dir) throws FileNotFoundException, SQLException {
         int readLen = msg.getEndPos();
         int start = msg.getStartPos();
-        boolean status = false;
         String path = file_dir + File.separator + msg.getName();
         if(start == 0)
             storageFiles(msg.getName(),path,msg, false);
@@ -30,19 +29,19 @@ public class FileTransfer {
             raf.write(bytes);
             start += readLen ;
             msg.setStartPos(start);
-            if(msg.getFileLen() - start <= 0){
-                status = true;
-            }
+
             if(readLen > 0){
                 ctx.writeAndFlush(msg);
             }else{
                 log.debug("读入完毕");
             }
+            if(readLen != 1024 * 1024 * 2){
+                storageFiles(msg.getName(),path,msg, true);
+                log.debug("写入完毕");
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        if(status)
-            storageFiles(msg.getName(),path,msg, true);
     }
 
     public static void transferFile(ChannelHandlerContext ctx, FileMessage msg)  {
@@ -54,12 +53,18 @@ public class FileTransfer {
             if (file.length() < 1024) {
                 lastLength = (int) file.length();
             } else {
-                int length = (int) (Math.min((file.length() / 10), 1024 * 2));
+                int length = (int) (Math.min((file.length() / 10), 1024 * 1024*2));
                 lastLength = length < (file.length() - msg.getStartPos()) ? length : (int) (file.length() - msg.getStartPos());
+
             }
             byte[] bytes = new byte[lastLength];
 
-            if((read = raf.read(bytes)) != -1 && lastLength > 0 ){
+            if (lastLength == 0) {
+                System.out.println("文件读取完毕");
+                return;
+            }
+
+            if((read = raf.read(bytes)) != -1 ){
                 msg.setEndPos(read);
                 msg.setFileLen(file.length());
                 msg.setBytes(bytes);

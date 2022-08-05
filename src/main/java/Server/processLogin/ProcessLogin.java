@@ -7,7 +7,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 
 public class ProcessLogin {
-    static int uid = 100000;
+    private static final int uid = 100000;
     public static boolean find(String uid , String password) throws SQLException {
         DbUtil db = DbUtil.getDb();
         Connection con = db.getConn();
@@ -80,10 +80,9 @@ public class ProcessLogin {
         rs.next();
         String max = rs.getString("uid");
         if(max == null){
-            return String.valueOf(ProcessLogin.uid);
+            return String.valueOf(uid);
         }
-
-        return String.valueOf(Integer.getInteger(max)+1);
+        return String.valueOf(Integer.parseInt(max)+1);
     }
 
 }

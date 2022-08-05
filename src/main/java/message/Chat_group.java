@@ -14,7 +14,7 @@ public class Chat_group { //用户的群资料
     private List<String> members;
     private String date;
     private List<String> administrator;
-    private String group_master;
+    private String group_master;//uid
     private String last_msg_time;
     private int membersNum;
     private int message;//是否有消息,或者条数

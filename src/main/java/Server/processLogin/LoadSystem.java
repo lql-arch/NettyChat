@@ -71,7 +71,7 @@ public class LoadSystem{
             loadMessage.setTime(time);
         }
 
-        ps2 = conn.prepareStatement("select text,send_uid,time,status from members.user_text where recipient_uid = ? and isAddFriend is null and addGroup is null");
+        ps2 = conn.prepareStatement("select text,send_uid,time,status from members.user_text where recipient_uid = ? and isAddFriend is null and addGroup is null order by id");
         ps2.setObject(1, uid);
         rs = ps2.executeQuery();
         while (rs.next()) {
@@ -91,7 +91,7 @@ public class LoadSystem{
         }
 
         //得到申请消息
-        ps2 = conn.prepareStatement("select text,send_uid,time,isAddFriend from members.user_text where recipient_uid = ? and isAddFriend is not null and status = true and addGroup is null");
+        ps2 = conn.prepareStatement("select text,send_uid,time,isAddFriend from members.user_text where recipient_uid = ? and isAddFriend is not null and status = true and addGroup is null order by id");
         ps2.setObject(1, uid);
         rs = ps2.executeQuery();
         while (rs.next()){
@@ -153,7 +153,7 @@ public class LoadSystem{
         LoadMessage loadMessage = new LoadMessage(myUid,1);
         List<Chat_record> message = new ArrayList<>();
 
-        ps = conn.prepareStatement("select text,recipient_uid,send_uid,time,status from members.user_text where recipient_uid = ? and isAddFriend is null and addGroup is null");
+        ps = conn.prepareStatement("select text,recipient_uid,send_uid,time,status from members.user_text where recipient_uid = ? and isAddFriend is null and addGroup is null order by id");
         ps.setObject(1, myUid);
         unread_message = getUnread_message(myUid, ps, unread_message, message);
 
@@ -225,7 +225,7 @@ public class LoadSystem{
         PreparedStatement ps;
         List<Chat_record> crs = new ArrayList<>();
 
-        ps = con.prepareStatement("select time, text from members.user_text where isAddFriend is null and addGroup is null and file = false and recipient_uid = ? and send_uid = ? and time >= ? and time < ? ");
+        ps = con.prepareStatement("select time, text from members.user_text where isAddFriend is null and addGroup is null and file = false and recipient_uid = ? and send_uid = ? and time >= ? and time < ? order by id");
         ps.setObject(1,msg.getFriendUid());
         ps.setObject(2,msg.getUid());
         ps.setObject(3,Timestamp.valueOf(msg.getStartTime()));
@@ -244,7 +244,7 @@ public class LoadSystem{
             crs.add(cr);
         }
 
-        ps = con.prepareStatement("select time, text from members.user_text where isAddFriend is null and addGroup is null and file = false and recipient_uid = ? and send_uid = ?");
+        ps = con.prepareStatement("select time, text from members.user_text where isAddFriend is null and addGroup is null and file = false and recipient_uid = ? and send_uid = ? order by id");
         ps.setObject(1,msg.getUid());
         ps.setObject(2,msg.getFriendUid());
         rs = ps.executeQuery();
@@ -275,7 +275,7 @@ public class LoadSystem{
         List<Chat_group> chat_groups = new ArrayList<>();
         int messages = 0;
 
-        ps = con.prepareStatement("select gid from chat_group.group_user where uid = ?");
+        ps = con.prepareStatement("select gid,last_msg_id from chat_group.group_user where uid = ?");
         ps.setObject(1,uid);
         rs = ps.executeQuery();
         while(rs.next()){
@@ -291,12 +291,12 @@ public class LoadSystem{
             ResultSet rs1 = ps.executeQuery();
             if(rs1.next()) {
                 group.setGroupName(rs1.getString("group_name"));
-                group.setTime(rs1.getTimestamp("creat_time"));
+                group.setTime(rs1.getTimestamp("create_time"));
                 group.setMembersNum(rs1.getInt("members_num"));
             }
 
             //获取群聊消息(unread限制没写)
-            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time > ? ");
+            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time > ?  order by id");
             ps.setObject(1,gid);
             ps.setObject(2,lastTime);
             rs1 = ps.executeQuery();
@@ -337,7 +337,7 @@ public class LoadSystem{
 
         List<GroupChat_text> gcts = new ArrayList<>();
 
-        ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ?");
+        ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ? order by id");
         ps.setObject(1,gid);
         ps.setObject(2,last_time);
         rs = ps.executeQuery();
@@ -352,7 +352,43 @@ public class LoadSystem{
             gcts.add(gct);
         }
 
+        ps = con.prepareStatement("select name from members.user where uid = ?;");
+        ps.setObject(1,lgm.getUid());
+        rs = ps.executeQuery();
+        if(rs.next()){
+            lgm.setMasterName(rs.getString("name"));
+        }
+
         lgm.setGroupMessages(gcts);
         return lgm;
+    }
+
+    public static void loadGroup(FindGroupMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("select group_name,create_time,members_num from chat_group.`group` where gid = ?");
+        ps.setObject(1,msg.getGid());
+        ResultSet rs = ps.executeQuery();
+        if(rs.next()){
+            msg.setGroupName(rs.getString("group_name"));
+            msg.setBuildTime(rs.getTimestamp("create_time").toString());
+            msg.setMembersCount(rs.getInt("members_num"));
+        }
+
+
+        ps = con.prepareStatement("select uid from chat_group.group_user where gid = ? and group_master = true");
+        ps.setObject(1,msg.getGid());
+        rs = ps.executeQuery();
+        if(rs.next()){
+            msg.setMasterUid(rs.getString("uid"));
+        }
+
+        ps = con.prepareStatement("select name from members.user where uid = ?;");
+        ps.setObject(1,msg.getMasterUid());
+        rs = ps.executeQuery();
+        if(rs.next()){
+            msg.setGroupMaster(rs.getString("name"));
+        }
     }
 }

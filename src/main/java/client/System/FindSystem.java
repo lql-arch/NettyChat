@@ -1,12 +1,10 @@
 package client.System;
 
+import client.SimpleChannelHandler.FindGroupHandler;
 import client.SimpleChannelHandler.FindHistoricalNews;
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
-import message.Chat_record;
-import message.HistoricalNews;
-import message.RequestMessage;
-import message.UserMessage;
+import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,6 +14,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Scanner;
 
+import static client.Start.semaphore;
 import static client.Start.uid;
 
 public class FindSystem {
@@ -24,30 +23,19 @@ public class FindSystem {
     public static void FindUid(ChannelHandlerContext ctx) throws IOException, InterruptedException {
         int read = 0;
         byte[] b = new byte[1024];
-        System.out.println("请输入想要查询的用户uid：(ctrl+d退出)");
+        System.out.println("请输入想要查询的用户uid：");
         if((read = System.in.read(b)) == -1){
             read = 3;
             b = "end".getBytes();
             return;
         }
         String uid = new String(b,0,read-1);
-//        BufferedReader systemIn = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-//        String uid = null;
-//        try{
-//            if((uid = systemIn.readLine()) == null) {
-//                return;
-//            }
-//        } catch (Exception e) {
-//            System.err.println("main_menu exception end:"+e);
-//        }
         String myUid = Start.uid;
         ctx.channel().writeAndFlush(new UserMessage(myUid));
         Start.semaphore.acquire(1);
         UserMessage me = Start.friend;
 
         ctx.channel().writeAndFlush(new UserMessage(uid));
-//        Thread.sleep(1000);
-//        log.debug(Start.semaphore.availablePermits());
         Start.semaphore.acquire(1);
         UserMessage user = Start.friend;
         if(user.getUid().equals(me.getUid()) || user.getBuild_time() == null){
@@ -155,7 +143,70 @@ public class FindSystem {
         System.out.println("----------------------------------------");
     }
 
-    public static void findGroup(ChannelHandlerContext ctx){
+    public static void findGroup(ChannelHandlerContext ctx) throws InterruptedException {
+        System.out.println("----------------------------------------");
+        int read = 0;
+        byte[] b = new byte[1024];
+        System.out.println("请输入想要查询的群的gid：");
+        try {
+            if ((read = System.in.read(b)) == -1) {
+                return;
+            }
+        } catch (IOException e) {
+            return;
+        }
+        String gid = new String(b, 0, read - 1);
+
+        FindGroupMessage fgm = new FindGroupMessage();
+        fgm.setGid(gid);
+
+        ctx.writeAndFlush(fgm);
+        semaphore.acquire();
+
+        showGroup(ctx);
 
     }
+
+    public static void showGroup(ChannelHandlerContext ctx){
+        FindGroupMessage fgm = FindGroupHandler.fgm;
+
+        boolean flag = true;
+        System.out.println("---------------------------------------------");
+        System.out.println("\tgid:"+fgm.getGid());
+        System.out.println("\t群名："+fgm.getGroupName());
+        System.out.println("\t创建者："+fgm.getGroupMaster()+"("+fgm.getMasterUid()+")");
+        System.out.println("\t创建时间"+fgm.getBuildTime());
+        System.out.println("\t人数："+fgm.getMembersCount());
+        System.out.println("---------------------------------------------");
+        System.out.println("\t1.申请加入群聊\t2.返回");
+        System.out.println("---------------------------------------------");
+
+        while(flag) {
+            flag = false;
+            String choice = new Scanner(System.in).nextLine();
+            switch (choice){
+                case "1":
+
+                    break;
+                case "2":
+                    return;
+                default:
+                    flag = true;
+                    System.err.println("输入错误");
+                    break;
+            }
+        }
+
+    }
+
 }
+
+//        BufferedReader systemIn = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+//        String uid = null;
+//        try{
+//            if((uid = systemIn.readLine()) == null) {
+//                return;
+//            }
+//        } catch (Exception e) {
+//            System.err.println("main_menu exception end:"+e);
+//        }

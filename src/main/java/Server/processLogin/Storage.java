@@ -1,21 +1,12 @@
 package Server.processLogin;
 
 import config.DbUtil;
-import io.netty.channel.ChannelHandlerContext;
-import message.FileMessage;
-import message.RequestMessage;
-import message.StringMessage;
-import message.UserMessage;
+import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Storage {
     private static final Logger log = LogManager.getLogger();
@@ -118,4 +109,40 @@ public class Storage {
         ps.execute();
     }
 
+    public static void buildGroup(LoadGroupMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        String gid = getGid(con);
+        Timestamp time = Timestamp.valueOf(LocalDateTime.now());
+        msg.setGid(gid);
+        msg.setTime(time.toString());
+
+        ps = con.prepareStatement("insert into chat_group.`group` (gid, group_name, create_time, update_time,members_num) values (?,?,?,?,?);");
+        ps.setObject(1,gid);
+        ps.setObject(2,msg.getGroupName());
+        ps.setObject(3,time);
+        ps.setObject(4,time);
+        ps.setObject(5,1);
+        ps.execute();
+
+        ps = con.prepareStatement("insert into chat_group.group_user(gid, uid, group_master, last_msg_id, administrator) values (?,?,true,?,false)");
+        ps.setObject(1,gid);
+        ps.setObject(2,msg.getGroup_master());
+        ps.setObject(3,Timestamp.valueOf(LocalDateTime.now()));
+        ps.execute();
+    }
+
+    public static String getGid(Connection con) throws SQLException {
+        String gid ;
+        PreparedStatement ps = con.prepareStatement("select gid from chat_group.`group` order by gid desc limit 1");
+        ResultSet rs = ps.executeQuery();
+        if(rs.next()){
+            gid = String.valueOf((Integer.parseInt(rs.getString("gid"))+1));
+        }else{
+            gid = "10000000";
+        }
+
+        return gid;
+    }
 }

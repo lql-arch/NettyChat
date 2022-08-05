@@ -24,7 +24,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
         try(RandomAccessFile randomAccessFile = new RandomAccessFile(file,"r")) {
             randomAccessFile.seek(fm.getStartPos());
-            int length = (int) ((file.length() / 10) < 1024*2 ? (file.length() / 10) : 1024*2);
+            int length = (int) ((file.length() / 10) < 1024*1024*2 ? (file.length() / 10) : 1024*1024*2);
             byte[] bytes = new byte[length];
             int read;
             fm.setName(file.getName());
@@ -63,6 +63,11 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             }else{
                 log.debug("写入完毕");
             }
+
+            if(readLen != 1024 * 1024 * 2){
+                log.debug("写入完毕");
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -83,7 +88,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 if (msg.getFileLen() < 1024) {
                     lastLength = (int) msg.getFileLen();
                 } else {
-                    int length = (int) (Math.min((msg.getFileLen() / 10), 1024 * 2));
+                    int length = (int) (Math.min((msg.getFileLen() / 10), 1024 * 1024 * 2));
                     lastLength = length < (msg.getFileLen() - msg.getStartPos()) ? length : (int) (msg.getFileLen() - msg.getStartPos());
                 }
                 if (lastLength < 0) {
@@ -95,7 +100,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                     return;
                 }
                 byte[] bytes = new byte[lastLength];
-//            log.debug("byte 长度：" + bytes.length);
+            log.debug("byte 长度：" + bytes.length);
                 if ((read = raf.read(bytes)) != -1) {
                     msg.setEndPos(read);
                     msg.setBytes(bytes);

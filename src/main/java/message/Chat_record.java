@@ -10,7 +10,7 @@ public class Chat_record {
     private  String date;
     private boolean status;
     private int type = 0;//0:聊天记录，1：申请好友记录，2：好友通知
-    public Chat_record(){}
+    public Chat_record(){ }
 
     public Chat_record(String uid, String send_uid, Timestamp time, String text, boolean status ){
         this.uid = uid;

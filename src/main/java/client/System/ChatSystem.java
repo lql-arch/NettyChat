@@ -15,7 +15,7 @@ import static client.Start.*;
 
 public class ChatSystem {
     private static final Logger log = LogManager.getLogger();
-    public synchronized static void friendSystem(LoadMessage load, ChannelHandlerContext ctx) throws InterruptedException, IOException {
+    public synchronized static void friendSystem(ChannelHandlerContext ctx) throws InterruptedException, IOException {
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+Start.uid));
             semaphore.acquire();
@@ -24,7 +24,6 @@ public class ChatSystem {
             String choice;
             Iterator<String> iter = friends.iterator();
             int count = 1;
-            //分页未实现
             System.out.println("\t-------------------------------------------");
             System.out.println("\t------------    我的好友     ----------------");
             System.out.println("\t-------------------------------------------");
@@ -52,10 +51,15 @@ public class ChatSystem {
                 }
                 if (!isDigit(choice)) {
                     System.err.println("输入错误。");
-                } else {
+                    continue;
+                }
+                int result = Integer.parseInt(choice);
+                if(result > 0 && result < count) {
                     String name_uid = map.get(choice);
-                    friendMaterial(name_uid,ctx);
+                    friendMaterial(name_uid, ctx);
                     break;
+                }else{
+                    System.err.println("输入错误。");
                 }
             }
         }
@@ -94,7 +98,7 @@ public class ChatSystem {
             System.out.println("用户状态:" + (friend.isStatus() ? "online" : " not online"));
             while (!flag) {
                 System.out.println("----------------------------------------");
-                System.out.println("1.发送消息\t2.发送文件\t3.查询历史消息\t4.加入黑名单\t5.删除好友\t6.返回\t");
+                System.out.println("1.发送消息\t2.发送文件\t3.查询历史消息\t4.加入黑名单\t5.删除好友\t6.返回\t7.刷新\t");
                 System.out.println("----------------------------------------");
                 String choice =  new Scanner(System.in).nextLine();
                 switch (choice) {
@@ -121,6 +125,9 @@ public class ChatSystem {
                             break;
                     case "6":
                         return;
+                    case  "7":
+                        flag = true;
+                        break;
                     default:
                         System.err.println("Error:无此选项,请重新输入.");
                         break;
@@ -283,10 +290,14 @@ public class ChatSystem {
             Map<Integer, String> countMap = new HashMap<>();
             int count = 1;
 
-            System.out.println("---------------------------------------------");
+            System.out.println("------------------------------------------------------------------------------------------");
             System.out.println("\t\t\t输入\"quit\"返回");
-            System.out.println("---------------------------------------------");
+            System.out.println("------------------------------------------------------------------------------------------");
             System.out.printf("%5s\t%20s\t%20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
+            if(fileRead.getFilePersonMap() == null && fileRead.getFileTimeMap() == null){
+                System.out.println("------------------------------------------------------------------------------------------");
+                return;
+            }
             for (Map.Entry<String, String> person : fileRead.getFilePersonMap().entrySet()) {
                 String name = uidNameMap.get(person.getValue());
                 if (!isPub && !Objects.equals(friend_uid, person.getValue()))
@@ -299,7 +310,7 @@ public class ChatSystem {
                 countMap.put(count, person.getKey());
                 System.out.printf("%5d\t%20s\t%20s\t%20s\n", count++, person.getKey(), name, time.get(person.getKey()));
             }
-            System.out.println("---------------------------------------------");
+            System.out.println("------------------------------------------------------------------------------------------");
 
             while (true) {
                 String choice = new Scanner(System.in).nextLine();

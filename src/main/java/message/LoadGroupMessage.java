@@ -12,10 +12,12 @@ public class LoadGroupMessage extends Message{
     private String gid;
     private String groupName;
     private List<String> administrator;
-    private String group_master;
+    private String group_master;//uid
+    private String masterName;
     private String time;
     private int membersCount;
     private String LastTime;
+    private boolean buildGroup = false;
 
 
     @Override

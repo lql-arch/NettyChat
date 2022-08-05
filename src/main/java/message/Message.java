@@ -34,6 +34,7 @@ public abstract class Message implements Serializable {
     public static final int FileRead = 11;
     public static final int HistoricalNews = 12;
     public static final int LoadGroupMessage = 13;
+    public static final int FindGroupMessage = 14;
 
     public static final Map<Integer,Class<? extends Message>> map = new HashMap<>();
 
@@ -51,6 +52,7 @@ public abstract class Message implements Serializable {
         map.put(FileRead,FileRead.class);
         map.put(HistoricalNews,HistoricalNews.class);
         map.put(LoadGroupMessage,LoadGroupMessage.class);
+        map.put(FindGroupMessage,FindGroupMessage.class);
     }
 
 }

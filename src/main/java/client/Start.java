@@ -1,9 +1,6 @@
 package client;
 
-import client.SimpleChannelHandler.FileMsgHandler;
-import client.SimpleChannelHandler.FileReadHandler;
-import client.SimpleChannelHandler.FindHistoricalNews;
-import client.SimpleChannelHandler.LoadGroupNewsHandler;
+import client.SimpleChannelHandler.*;
 import client.System.ChatSystem;
 import client.System.FindSystem;
 import client.System.GroupSystem;
@@ -20,12 +17,13 @@ import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Start {
-    private  static final Logger log = LogManager.getLogger();
+    public static final Logger log = LogManager.getLogger();
     private LoginMessage login;
     private static AtomicBoolean flag = new AtomicBoolean(false);
     public static int unread_message;
@@ -202,6 +200,7 @@ public class Start {
                                 protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
                                     if(msg.isFriend()){
                                         System.err.println("你与目标已经是好友了！");
+                                        semaphore.release();
                                     }else{
                                         System.out.println(msg.getNotice());
                                         semaphore.release();
@@ -212,9 +211,10 @@ public class Start {
                             ch.pipeline().addLast(new FileReadHandler());
                             ch.pipeline().addLast(new FindHistoricalNews());
                             ch.pipeline().addLast(new LoadGroupNewsHandler());
+                            ch.pipeline().addLast(new FindGroupHandler());
 
                         }
-                    }).connect("127.0.0.1", 8100);
+                    }).connect("192.168.30.100", 8100);
 
             channelFuture.sync();
             Channel channel = channelFuture.channel();
@@ -228,13 +228,24 @@ public class Start {
     }
 
     private  void extracted(ChannelHandlerContext ctx) throws Exception {
+        boolean error = true;
+
+        while(error) {
+            error = false;
+            String tmp;
             System.out.println("\t------------------------------------\t");
             System.out.println("\t---------       1.登录     \t--------\t");
             System.out.println("\t--------- 2.快速登录(已弃用) \t--------\t");
             System.out.println("\t---------       3.注册     \t--------\t");
             System.out.println("\t---------       4.退出     \t--------\t");
             System.out.println("\t------------------------------------\t");
-            String tmp = new Scanner(System.in).nextLine();
+            try {
+                tmp = new Scanner(System.in).nextLine();
+            }catch (Exception e){
+                error = true;
+                System.err.println("输入错误");
+                continue;
+            }
             switch (tmp) {
                 case "1":
                     login = LoginMessage.LoginUser();
@@ -251,8 +262,10 @@ public class Start {
                     ctx.channel().close();
                     break;
                 default:
+                    error = true;
                     System.err.println("输入错误");
             }
+        }
     }
 
     private void main_menu(ChannelHandlerContext ctx) throws Exception {
@@ -276,7 +289,7 @@ public class Start {
             String tmp = new Scanner(System.in).nextLine();
             switch (tmp) {
                 case "1":
-                    ChatSystem.friendSystem(load,ctx);
+                    ChatSystem.friendSystem(ctx);
                     break;
                 case "2":
                     GroupSystem.groupSystem(ctx);
