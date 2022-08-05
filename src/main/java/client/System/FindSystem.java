@@ -14,8 +14,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Scanner;
 
-import static client.Start.semaphore;
-import static client.Start.uid;
+import static client.Start.*;
 
 public class FindSystem {
     private static final Logger log = LogManager.getLogger();
@@ -30,6 +29,11 @@ public class FindSystem {
             return;
         }
         String uid = new String(b,0,read-1);
+        findPerson(ctx, uid);
+
+    }
+
+    public static void findPerson(ChannelHandlerContext ctx, String uid) throws InterruptedException, IOException {
         String myUid = Start.uid;
         ctx.channel().writeAndFlush(new UserMessage(myUid));
         Start.semaphore.acquire(1);
@@ -43,7 +47,6 @@ public class FindSystem {
             return;
         }
         extracted(ctx,me,user);
-
     }
 
     public static void extracted(ChannelHandlerContext ctx,UserMessage me, UserMessage user) throws IOException, InterruptedException {
@@ -59,12 +62,22 @@ public class FindSystem {
             System.out.println("----------------------------------------");
             System.out.println("1.加为好友\t2.返回\t");
             System.out.println("----------------------------------------");
-            char choice = (char) new Scanner(System.in).nextByte();
-            switch (choice) {
+            String choice = new Scanner(System.in).next();
+            if(!ChatSystem.isDigit(choice)){
+                System.err.println("Error:无此选项,请重新输入.");
+                continue;
+            }
+            int result = Integer.parseInt(choice);
+            switch (result) {
                 case 1:
-                    RequestMessage rm = new RequestMessage().setRequestPerson(me).setRecipientPerson(user).setAddOrDelete(true).setFriend(true);
-                    ctx.channel().writeAndFlush(rm);
-                    break;
+                    if(uidNameMap.get(user.getUid()).compareTo(user.getName()) == 0){
+                        System.out.println("你们已是好友(按下“Entry”继续)");
+                        System.in.read();
+                        break;
+                    }else {
+                        RequestMessage rm = new RequestMessage().setRequestPerson(me).setRecipientPerson(user).setAddOrDelete(true).setFriend(true);
+                        ctx.channel().writeAndFlush(rm);
+                    }
                 case 2:
                     return;
                 default:

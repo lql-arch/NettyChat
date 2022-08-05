@@ -16,7 +16,7 @@ public class LoadGroupNewsHandler extends SimpleChannelInboundHandler<LoadGroupM
             ctx.writeAndFlush(msg);
             return;
         }
-        msg = LoadSystem.loadGroupMessages(msg.getGid(), Timestamp.valueOf(msg.getLastTime()));
+        LoadSystem.loadGroupMessages(msg);
         ctx.channel().writeAndFlush(msg);
     }
 

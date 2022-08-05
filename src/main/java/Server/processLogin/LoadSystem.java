@@ -1,16 +1,15 @@
 package Server.processLogin;
 
 import Server.ChatServer;
+import Server.SimpleChannelHandler.LoadGroupNewsHandler;
 import config.DbUtil;
 import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 
 import static Server.ChatServer.addBlack;
 
@@ -328,18 +327,18 @@ public class LoadSystem{
         return loadMessage;
     }
 
-    public static LoadGroupMessage loadGroupMessages(String gid,Timestamp last_time) throws SQLException {
-        LoadGroupMessage lgm = new LoadGroupMessage();
+    public static LoadGroupMessage loadGroupMessages(LoadGroupMessage msg) throws SQLException {
         Connection con = DbUtil.getDb().getConn();
 
         PreparedStatement ps;
         ResultSet rs;
 
         List<GroupChat_text> gcts = new ArrayList<>();
+        Map<String, String> uidNameMap = new HashMap<>();
 
         ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ? order by id");
-        ps.setObject(1,gid);
-        ps.setObject(2,last_time);
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,msg.getLastTime());
         rs = ps.executeQuery();
         while(rs.next()){
             String rg_uid = rs.getString("uid");
@@ -353,14 +352,32 @@ public class LoadSystem{
         }
 
         ps = con.prepareStatement("select name from members.user where uid = ?;");
-        ps.setObject(1,lgm.getUid());
+        ps.setObject(1,msg.getUid());
         rs = ps.executeQuery();
         if(rs.next()){
-            lgm.setMasterName(rs.getString("name"));
+            msg.setMasterName(rs.getString("name"));
         }
 
-        lgm.setGroupMessages(gcts);
-        return lgm;
+        for (String t : msg.getAdministrator()) {
+            ps = con.prepareStatement("select name from members.user where uid = ?;");
+            ps.setObject(1, t);
+            rs = ps.executeQuery();
+            if(rs.next()){
+                uidNameMap.put(t,rs.getString("name"));
+            }
+        }
+
+        for (String t : msg.getMembers()) {
+            ps = con.prepareStatement("select name from members.user where uid = ?;");
+            ps.setObject(1, t);
+            if(rs.next()){
+                uidNameMap.put(t,rs.getString("name"));
+            }
+        }
+
+        msg.setUidNameMap(uidNameMap);
+        msg.setGroupMessages(gcts);
+        return msg;
     }
 
     public static void loadGroup(FindGroupMessage msg) throws SQLException {

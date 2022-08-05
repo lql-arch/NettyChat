@@ -11,11 +11,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
+import static client.Start.load;
 import static client.System.ChatSystem.isDigit;
 
 public class MaterialSystem {
     private  static final Logger log = LogManager.getLogger();
-    public static void myMaterial(LoadMessage load, ChannelHandlerContext ctx) throws InterruptedException {
+    public static void myMaterial(ChannelHandlerContext ctx) throws InterruptedException {
         while(true) {
             boolean flag = true;
             ctx.channel().writeAndFlush(new UserMessage(Start.uid));

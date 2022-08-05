@@ -3,6 +3,7 @@ package message;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class LoadGroupMessage extends Message{
@@ -12,8 +13,10 @@ public class LoadGroupMessage extends Message{
     private String gid;
     private String groupName;
     private List<String> administrator;
+    private List<String> members;
     private String group_master;//uid
     private String masterName;
+    private Map<String,String> uidNameMap;
     private String time;
     private int membersCount;
     private String LastTime;

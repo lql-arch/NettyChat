@@ -1,10 +1,7 @@
 package client;
 
 import client.SimpleChannelHandler.*;
-import client.System.ChatSystem;
-import client.System.FindSystem;
-import client.System.GroupSystem;
-import client.System.MaterialSystem;
+import client.System.*;
 import config.Decode;
 import config.Encode;
 import config.FrameDecoder;
@@ -94,7 +91,7 @@ public class Start {
                                         ctx.channel().writeAndFlush(new LoginStringMessage("start!"+login.getUid()));
                                     }
                                     if(str.startsWith("you have been pushed off the line")){
-                                        throw new Exception("你已被挤下线");
+                                        System.err.println("你已被挤下线");
                                     }
                                 }
 
@@ -151,7 +148,6 @@ public class Start {
                                         load = msg;
                                         unread_message = msg.getUnread_message();
                                         uidNameMap = load.getUidNameMap();
-//                                        nameUidMap = load.getNameUidMap();
                                         semaphore.release();
                                     }
                                 }
@@ -187,7 +183,7 @@ public class Start {
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<StringMessage>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, StringMessage msg) throws Exception {
-                                    if(singleFlag.get()) {
+                                    if(singleFlag.get() && msg.getMe().getUid().compareTo(SendMessageSystem.send[1]) == 0) {
                                         System.out.println(msg.getMe().getName() + ":" + msg.getMessage());
                                     }else if(msg.isDirect()){
                                         System.out.println(msg.getMessage());
@@ -301,7 +297,7 @@ public class Start {
                     ChatSystem.unreadMessage(ctx,load);
                     break;
                 case "5":
-                    MaterialSystem.myMaterial(load,ctx);
+                    MaterialSystem.myMaterial(ctx);
                     break;
                 case "6":
                     MaterialSystem.blacklist(load,ctx);

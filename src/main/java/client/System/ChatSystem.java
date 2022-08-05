@@ -75,7 +75,7 @@ public class ChatSystem {
         }
     }
 
-    private static void friendMaterial(String uid, ChannelHandlerContext ctx) throws InterruptedException, IOException {
+    public static void friendMaterial(String uid, ChannelHandlerContext ctx) throws InterruptedException, IOException {
         String myUid = Start.uid;
         ctx.channel().writeAndFlush(new UserMessage(myUid));
         semaphore.acquire();

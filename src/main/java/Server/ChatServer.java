@@ -43,7 +43,7 @@ public class ChatServer {
                     .childOption(ChannelOption.SO_KEEPALIVE,true)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
+                        protected void initChannel(SocketChannel ch) {
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
                             ch.pipeline().addFirst(new FrameDecoder());
                             ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
@@ -190,7 +190,6 @@ public class ChatServer {
                                             if (channel != null) {
                                                 channel.writeAndFlush(msg);
                                             }//在线
-//                                          log.debug(msg.getMessage());
                                             Storage.storageSingleMessage(msg);
                                         }
                                     }
@@ -211,8 +210,6 @@ public class ChatServer {
                                 protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
                                     if(!msg.isAddOrDelete()){//判断是添加还是删除
                                         log.debug("delete:"+msg.getRequestPerson().getUid()+" "+msg.getRecipientPerson().getUid());
-                                        String deleteUid = msg.getRecipientPerson().getUid();
-                                        Channel channel = uidChannelMap.get(deleteUid);
                                         Delete.deleteFriend(msg);//删除好友信息
                                         String str = msg.getRequestPerson().getName()+"将您移除了好友列表。";
                                         StringMessage sm = new StringMessage(msg.getRequestPerson(),msg.getRecipientPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());

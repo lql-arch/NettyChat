@@ -18,33 +18,25 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 
+import static client.Start.uid;
+
 public class SendMessageSystem {
     private static final Logger log = LogManager.getLogger(SendMessageSystem.class);
+
+    public static String[] send = new String[2];
 
     public static void sendFriend(ChannelHandlerContext ctx, UserMessage me, UserMessage friend) throws IOException, InterruptedException {
         Timestamp date = Timestamp.valueOf(LocalDateTime.now());
         String string;
 
+        send[0] = uid;
+        send[1] = friend.getUid();
         System.out.println("--------------------------------------------------");
         System.out.println("\t\t\t" + friend.getName() + "(输入EXIT退出)\t");
         System.out.println("--------------------------------------------------");
         showMessage(me, friend);
         Start.singleFlag.set(true);
-//        Thread time = new Thread(()->{//每五分钟发送一次时间
-//            while(true){
-//                //LocalDateTime localDateTime = LocalDateTime.now();
-//                Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
-//                System.out.println("\t"+timestamp);
-//                try {
-//                    Thread.sleep(5*60*1000);
-//                } catch (InterruptedException e) {
-//                    log.info(me.getUid()+"--退出单聊");
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
-//        time.start();
-//        try {
+
         while ((string = new Scanner(System.in).nextLine()) != null) {
             if (string.compareToIgnoreCase("exit") == 0) {
                 break;
@@ -55,16 +47,11 @@ public class SendMessageSystem {
             Start.message.add(sm);//本次登录储存起来
             ctx.channel().writeAndFlush(sm);
         }
-//        }catch (Exception e){
-//            e.printStackTrace();
-//        }finally {
+
         Start.singleFlag.set(false);
         System.out.println("--------------------------------------------------");
         //在此处更新数据未读状态(date之前的消息都改为未读)
         ctx.channel().writeAndFlush(new ReviseMsgStatusMessage(me.getUid(), friend.getUid(), date.toString()));//time send_uid rg_id
-//        }
-//        time.interrupt();
-//        time.join();
     }
 
     private static void showMessage(UserMessage me, UserMessage friend) {
@@ -89,7 +76,7 @@ public class SendMessageSystem {
         }
         if (Start.message != null) {//登录后内容
             for (StringMessage msg : Start.message) {
-                if (msg.getFriend().getUid().compareTo(Start.uid) != 0 &&
+                if (msg.getFriend().getUid().compareTo(uid) != 0 &&
                         msg.getFriend().getUid().compareTo(friend.getUid()) != 0) {
                     continue;
                 }
@@ -123,3 +110,25 @@ public class SendMessageSystem {
     }
 
 }
+
+//        Thread time = new Thread(()->{//每五分钟发送一次时间
+//            while(true){
+//                //LocalDateTime localDateTime = LocalDateTime.now();
+//                Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
+//                System.out.println("\t"+timestamp);
+//                try {
+//                    Thread.sleep(5*60*1000);
+//                } catch (InterruptedException e) {
+//                    log.info(me.getUid()+"--退出单聊");
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+//        time.start();
+//        try {
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }finally {
+//        }
+//        time.interrupt();
+//        time.join();
