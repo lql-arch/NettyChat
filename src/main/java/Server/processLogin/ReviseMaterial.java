@@ -7,6 +7,7 @@ import config.DbUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import message.RequestMessage;
+import message.ReviseGroupMemberMessage;
 import message.ReviseMsgStatusMessage;
 import message.ReviseMessage;
 import org.apache.logging.log4j.LogManager;
@@ -126,4 +127,16 @@ public class ReviseMaterial {
 
         ps.execute();
     }
+
+    public static void SetGroupManage(ReviseGroupMemberMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("update chat_group.group_user set administrator = true where uid = ? and gid = ?;");
+        ps.setObject(1,msg.getUid());
+        ps.setObject(2, msg.getGid());
+
+        ps.execute();
+    }
+
 }

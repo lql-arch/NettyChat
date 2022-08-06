@@ -1,14 +1,14 @@
 package client.System;
 
+import client.SimpleChannelHandler.GroupNoticeHandler;
 import client.SimpleChannelHandler.LoadGroupNewsHandler;
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
-import message.Chat_group;
-import message.LoadGroupMessage;
-import message.LoginStringMessage;
+import message.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.*;
 
 import static client.Start.*;
@@ -202,7 +202,72 @@ public class GroupSystem {
         }
     }
 
-    public static void unreadGroupMsg(ChannelHandlerContext ctx){
+    public static void GroupMsg(ChannelHandlerContext ctx) throws InterruptedException, IOException {
+        boolean flag = true;
+        System.out.println("---------------------------------------------");
+        System.out.println("\t\t\t1.群通知");
+        System.out.println("\t\t\t2.群未读消息");
+        System.out.println("\t\t\t3.返回");
+        System.out.println("---------------------------------------------");
+
+        while(flag) {
+            flag = false;
+            String choice = new Scanner(System.in).nextLine();
+            if (!isDigit(choice)) {
+                System.err.println("输入错误");
+                continue;
+            }
+            switch (Integer.parseInt(choice)){
+                case 1:
+                    groupNotice(ctx);
+                    break;
+                case 2:
+                    unreadGroupMsg();
+                    break;
+                case 3:
+                    return;
+                default:
+                    flag = true;
+                    System.err.println("输入错误");
+                    break;
+            }
+        }
+    }
+
+    public static void groupNotice(ChannelHandlerContext ctx) throws InterruptedException, IOException {
+        GroupNoticeMessage gnm = new GroupNoticeMessage();
+        gnm.setUid(uid);
+        ctx.writeAndFlush(gnm);
+        semaphore.acquire();
+
+        gnm = GroupNoticeHandler.gnm;
+        Iterator<GroupNoticeMessage.Notice> notices = gnm.getNotices().listIterator();
+        Timestamp one = null,second = null;
+        System.out.println("---------------------------------------------");
+        System.out.println("\t\t\t输入\"quit\"返回");
+        System.out.println("---------------------------------------------");
+        while(notices.hasNext()){
+            GroupNoticeMessage.Notice iter = notices.next();
+            if(one == null) {
+                one = Timestamp.valueOf(iter.getTime());
+                System.out.println(one);
+            }else {
+                one = Timestamp.valueOf(iter.getTime());
+                if (one.getTime() - second.getTime() > 60 * 1000 * 5) {
+                    System.out.println(one);
+                }
+            }
+            System.out.println(iter.getGid()+":"+iter.getNotice());
+            second = one;
+        }
+        System.out.println("---------------------------------------------");
+
+        System.out.println("按下“Entry”继续");
+        System.in.read();
+
+    }
+
+    public static void unreadGroupMsg(){
 
     }
 
@@ -226,7 +291,8 @@ public class GroupSystem {
     }
 
     public static void enterGroupChat(ChannelHandlerContext ctx,LoadGroupMessage msg){
-        System.out.print("");
+
+        System.out.println("---------------------------------------------");
         
     }
 
@@ -236,6 +302,9 @@ public class GroupSystem {
 
     public static void viewGroupMembers(ChannelHandlerContext ctx,LoadGroupMessage msg) throws IOException, InterruptedException {
         while(true) {
+            ctx.writeAndFlush(msg);
+            semaphore.acquire();
+
             int count = 1;
             Map<Integer,String> countMap = new HashMap<>();
 
@@ -262,7 +331,7 @@ public class GroupSystem {
                 System.out.println("---------------------------------------------");
                 System.out.println("\t\t\t 输入“exit”退出");
                 if(msg.getGroup_master().compareTo(uid) == 0 || msg.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0)){
-                    System.out.println("\t\t\t输入“manage”进入管理");
+                    System.out.println("\t\t\t输入“manage”进入管理界面");
                 }
                 System.out.println("---------------------------------------------");
 
@@ -272,11 +341,11 @@ public class GroupSystem {
                 }
                 if(choice.compareToIgnoreCase("manage") == 0) {
                     if (msg.getGroup_master().compareTo(uid) == 0) {//群主
-                        groupMembersManage(ctx,msg,1);
+                        groupMembersManage(ctx,msg,1,count,countMap);
                         break;
                     }
                     if (msg.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0)) {//管理
-                        groupMembersManage(ctx,msg,2);
+                        groupMembersManage(ctx,msg,2,count,countMap);
                         break;
                     }
                 }
@@ -302,15 +371,114 @@ public class GroupSystem {
         }
     }
 
-    public static void groupMembersManage(ChannelHandlerContext ctx,LoadGroupMessage msg,int type){
+    public static void groupMembersManage(ChannelHandlerContext ctx,LoadGroupMessage msg,int type,int max,Map<Integer,String> countMap) throws InterruptedException {
+        String uid;
+        int min = 0;
+        int result;
+
+        System.out.println("请输入想要处理的序号");
+        while(true) {
+            String choice = new Scanner(System.in).nextLine();
+            if (choice.compareToIgnoreCase("exit") == 0) {
+                return;
+            }
+            if (!isDigit(choice)) {
+                System.err.println("输入错误");
+            }
+            result = Integer.parseInt(choice);
+            if(type == 1)
+                min = 1;
+            else
+                min = 1 + msg.getAdministrator().size();
+            if (result > min && result < max) {
+                uid = countMap.get(result);
+                break;
+            }else if(result < min && result > 0){
+                System.out.println("您没有权限对此作出更改.");
+            }else{
+                System.err.println("输入错误");
+            }
+        }
+        if(type == 1){
+            System.out.println("---------------------------------------------");
+            System.out.println("1.移除群聊\t2.设为管理\t3.返回");
+            System.out.println("---------------------------------------------");
+        }else if(type == 2){
+            System.out.println("---------------------------------------------");
+            System.out.println("1.移除群聊\t2/3.返回");
+            System.out.println("---------------------------------------------");
+        }
+
+        while(true) {
+            String c = new Scanner(System.in).nextLine();
+            if (!isDigit(c)) {
+                System.err.println("输入错误");
+            }
+            switch (Integer.parseInt(c)){
+                case 1:
+                     removeGroup(ctx,uid,msg,type);
+                     return;
+                case 2:
+                    if(type == 1 && result > 1 + msg.getAdministrator().size()){
+                        setManager(ctx,uid,msg);
+                    }else if(type == 1 && result < 1 + msg.getAdministrator().size()){
+                        System.err.println("他已经是管理员了.");
+                    }
+                case 3:
+                    return;
+                default:
+                    System.err.println("输入错误");
+                    break;
+            }
+        }
+    }
+
+    @NotNull
+    private static ReviseGroupMemberMessage getReviseGroupMemberMessage(String uid, LoadGroupMessage msg, boolean setManage, boolean removeGroup,boolean disbandGroupChat) {
+        ReviseGroupMemberMessage rgmm = new ReviseGroupMemberMessage();
+        rgmm.setUid(uid);
+        rgmm.setGid(msg.getGid());
+        rgmm.setSetManage(setManage);
+        rgmm.setRemoveGroup(removeGroup);
+        rgmm.setManageUid(Start.uid);
+        rgmm.setDisbandGroupChat(disbandGroupChat);
+        return rgmm;
+    }
+
+    public static void removeGroup(ChannelHandlerContext ctx, String uid, LoadGroupMessage msg, int type) throws InterruptedException {
+        ReviseGroupMemberMessage rgmm = getReviseGroupMemberMessage(uid, msg, false, true,false);
+
+        ctx.writeAndFlush(rgmm);
+        semaphore.acquire();
+
+        if(!msg.getMembers().remove(uid) && type == 1)
+            msg.getAdministrator().remove(uid);
 
     }
+
+    public static void setManager(ChannelHandlerContext ctx,String uid,LoadGroupMessage msg) throws InterruptedException {
+        ReviseGroupMemberMessage rgmm = getReviseGroupMemberMessage(uid, msg, true, false,false);
+
+        ctx.writeAndFlush(rgmm);
+        semaphore.acquire();
+
+        msg.getAdministrator().add(uid);
+        msg.getMembers().remove(uid);
+    }
+
+
 
     public static void bannedMembers(ChannelHandlerContext ctx,LoadGroupMessage msg){
 
     }
 
-    public static void disbandTheGroupChat(ChannelHandlerContext ctx,LoadGroupMessage msg){
-
+    public static void disbandTheGroupChat(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+        System.out.println("您真的确定要解散群聊名？（yes/no）");
+        String result = new Scanner(System.in).nextLine();
+        if(result.compareToIgnoreCase("yes") == 0 || result.compareToIgnoreCase("y") == 0 ){
+            ReviseGroupMemberMessage rgmm = getReviseGroupMemberMessage(uid,msg,false,false,true);
+            ctx.writeAndFlush(rgmm);
+            semaphore.acquire();
+        }
     }
 }

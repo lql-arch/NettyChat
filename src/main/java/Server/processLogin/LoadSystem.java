@@ -7,6 +7,7 @@ import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.security.Key;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
@@ -336,7 +337,7 @@ public class LoadSystem{
         List<GroupChat_text> gcts = new ArrayList<>();
         Map<String, String> uidNameMap = new HashMap<>();
 
-        ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ? order by id");
+        ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ? and isNotice = false order by id");
         ps.setObject(1,msg.getGid());
         ps.setObject(2,msg.getLastTime());
         rs = ps.executeQuery();
@@ -384,7 +385,7 @@ public class LoadSystem{
         Connection con = DbUtil.getDb().getConn();
         PreparedStatement ps;
 
-        ps = con.prepareStatement("select group_name,create_time,members_num from chat_group.`group` where gid = ?");
+        ps = con.prepareStatement("select group_name,create_time,members_num from chat_group.`group` where gid = ? order by id ");
         ps.setObject(1,msg.getGid());
         ResultSet rs = ps.executeQuery();
         if(rs.next()){
@@ -394,7 +395,7 @@ public class LoadSystem{
         }
 
 
-        ps = con.prepareStatement("select uid from chat_group.group_user where gid = ? and group_master = true");
+        ps = con.prepareStatement("select uid from chat_group.group_user where gid = ? and group_master = true order by id ");
         ps.setObject(1,msg.getGid());
         rs = ps.executeQuery();
         if(rs.next()){
@@ -407,5 +408,49 @@ public class LoadSystem{
         if(rs.next()){
             msg.setGroupMaster(rs.getString("name"));
         }
+    }
+
+    public static void loadGroupNotice(GroupNoticeMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        ResultSet rs;
+        Map<String,Integer> groups = new HashMap<>();
+
+        ps = con.prepareStatement("select gid,administrator,group_master from chat_group.group_user where uid = ?;");
+        ps.setObject(1,msg.getUid());
+        rs = ps.executeQuery();
+        while(rs.next()){
+            boolean group_master = rs.getBoolean("group_master");
+            boolean administrator = rs.getBoolean("administrator");
+            String gid = rs.getString("gid");
+
+            if(group_master){
+                groups.put(gid,3);
+            }else if(administrator){
+                groups.put(gid,2);
+            }else{
+                groups.put(gid,0);
+            }
+        }
+
+        for(Map.Entry<String, Integer> level : groups.entrySet()){
+            ps = con.prepareStatement("select text,gid,time from chat_group.group_msg where gid = ? and isNotice = true and (level <= ? or (uid = ? and level = 1)) order by id ;");
+            ps.setObject(1,level.getKey());
+            ps.setObject(2,level.getValue());
+            ps.setObject(3,msg.getUid());
+            rs = ps.executeQuery();
+            while (rs.next()){
+                String gid = rs.getString("gid");
+
+                GroupNoticeMessage.Notice notice = new GroupNoticeMessage.Notice();
+                notice.setNotice(rs.getString("text"));
+                notice.setGid(gid);
+                notice.setTime(rs.getString("time"));
+
+                msg.addNotice(notice);
+            }
+        }
+
+
     }
 }

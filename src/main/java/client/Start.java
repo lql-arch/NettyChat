@@ -208,6 +208,8 @@ public class Start {
                             ch.pipeline().addLast(new FindHistoricalNews());
                             ch.pipeline().addLast(new LoadGroupNewsHandler());
                             ch.pipeline().addLast(new FindGroupHandler());
+                            ch.pipeline().addLast(new ReviseGroupMemberHandler());
+                            ch.pipeline().addLast(new GroupNoticeHandler());
 
                         }
                     }).connect("192.168.30.100", 8100);

@@ -24,8 +24,6 @@ public class FindSystem {
         byte[] b = new byte[1024];
         System.out.println("请输入想要查询的用户uid：");
         if((read = System.in.read(b)) == -1){
-            read = 3;
-            b = "end".getBytes();
             return;
         }
         String uid = new String(b,0,read-1);
@@ -70,7 +68,7 @@ public class FindSystem {
             int result = Integer.parseInt(choice);
             switch (result) {
                 case 1:
-                    if(uidNameMap.get(user.getUid()).compareTo(user.getName()) == 0){
+                    if( !uidNameMap.isEmpty() && uidNameMap.get(user.getUid()) != null){
                         System.out.println("你们已是好友(按下“Entry”继续)");
                         System.in.read();
                         break;
@@ -158,7 +156,7 @@ public class FindSystem {
 
     public static void findGroup(ChannelHandlerContext ctx) throws InterruptedException {
         System.out.println("----------------------------------------");
-        int read = 0;
+        int read;
         byte[] b = new byte[1024];
         System.out.println("请输入想要查询的群的gid：");
         try {

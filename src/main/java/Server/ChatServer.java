@@ -25,8 +25,8 @@ import java.util.concurrent.Semaphore;
 public class ChatServer {
     private static final Logger log = LogManager.getLogger(ChatServer.class);
 
-    private static Map<String,Channel> uidChannelMap = new HashMap<>();
-    private static Map<Channel,String> channelUidMap = new HashMap<>();
+    public static Map<String,Channel> uidChannelMap = new HashMap<>();
+    public static Map<Channel,String> channelUidMap = new HashMap<>();
     private static Map<String,String> blackMap = new HashMap<>();
 
     private static Semaphore semaphore = new Semaphore(0);
@@ -258,6 +258,8 @@ public class ChatServer {
                             ch.pipeline().addLast(new FindHistoricalNews());
                             ch.pipeline().addLast(new LoadGroupNewsHandler());
                             ch.pipeline().addLast(new FindGroupHandler());
+                            ch.pipeline().addLast(new ReviseGroupMemberHandler());
+                            ch.pipeline().addLast(new GroupNoticeHandler());
 
                         }
                     }).bind(8100);

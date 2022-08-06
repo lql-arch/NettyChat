@@ -98,7 +98,8 @@ public class ChatSystem {
             System.out.println("用户状态:" + (friend.isStatus() ? "online" : " not online"));
             while (!flag) {
                 System.out.println("----------------------------------------");
-                System.out.println("1.发送消息\t2.发送文件\t3.查询历史消息\t4.加入黑名单\t5.删除好友\t6.返回\t7.刷新\t");
+                System.out.println("1.发送消息\t2.发送文件\t3.查询历史消息\n" +
+                        "4.加入黑名单\t5.删除好友\t6.返回\t7.刷新\t");
                 System.out.println("----------------------------------------");
                 String choice =  new Scanner(System.in).nextLine();
                 switch (choice) {
@@ -137,7 +138,7 @@ public class ChatSystem {
     }
 
 
-    public static void unreadMessage(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException {
+    public static void unreadMessage(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException, IOException {
         while(true){
             ctx.writeAndFlush(new LoginStringMessage("flush!"+uid));
             semaphore.acquire();
@@ -159,7 +160,7 @@ public class ChatSystem {
                     unreadRequestMsg(ctx,load);
                     break;
                 case "3":
-                    GroupSystem.unreadGroupMsg(ctx);
+                    GroupSystem.GroupMsg(ctx);
                     break;
                 case "4":
                     fileMsg(ctx,null,true);

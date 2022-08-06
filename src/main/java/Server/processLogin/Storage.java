@@ -134,15 +134,31 @@ public class Storage {
     }
 
     public static String getGid(Connection con) throws SQLException {
-        String gid ;
+        String gid;
         PreparedStatement ps = con.prepareStatement("select gid from chat_group.`group` order by gid desc limit 1");
         ResultSet rs = ps.executeQuery();
-        if(rs.next()){
-            gid = String.valueOf((Integer.parseInt(rs.getString("gid"))+1));
-        }else{
+        if (rs.next()) {
+            gid = String.valueOf((Integer.parseInt(rs.getString("gid")) + 1));
+        } else {
             gid = "10000000";
         }
 
         return gid;
+    }
+
+    public static void storageGroupNotice(ReviseGroupMemberMessage msg,String text,int level) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        Timestamp time = Timestamp.valueOf(LocalDateTime.now());
+
+        ps = con.prepareStatement("insert into chat_group.group_msg (uid, text, gid, time,isNotice,level) values (?,?,?,?,true,?);");
+        ps.setObject(1,msg.getUid());
+        ps.setObject(2,text);
+        ps.setObject(3,msg.getGid());
+        ps.setObject(4,time);
+        ps.setObject(5,level);
+        ps.execute();
+
     }
 }
