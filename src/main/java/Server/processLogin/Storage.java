@@ -161,4 +161,18 @@ public class Storage {
         ps.execute();
 
     }
+
+    public static void storageGroupString(GroupStringMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("insert into chat_group.group_msg(uid, text, gid, time, isNotice, level) values (?,?,?,?,false,0)");
+        ps.setObject(1,msg.getText().getUid());
+        ps.setObject(2,msg.getText().getText());
+        ps.setObject(3,msg.getText().getGid());
+        ps.setObject(4,Timestamp.valueOf(msg.getText().getDate()));
+        ps.execute();
+
+    }
+
 }

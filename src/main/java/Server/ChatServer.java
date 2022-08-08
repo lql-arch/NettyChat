@@ -260,6 +260,7 @@ public class ChatServer {
                             ch.pipeline().addLast(new FindGroupHandler());
                             ch.pipeline().addLast(new ReviseGroupMemberHandler());
                             ch.pipeline().addLast(new GroupNoticeHandler());
+                            ch.pipeline().addLast(new GroupStringHandler());
 
                         }
                     }).bind(8100);

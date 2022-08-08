@@ -100,7 +100,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                     return;
                 }
                 byte[] bytes = new byte[lastLength];
-            log.debug("byte 长度：" + bytes.length);
+//            log.debug("byte 长度：" + bytes.length);
                 if ((read = raf.read(bytes)) != -1) {
                     msg.setEndPos(read);
                     msg.setBytes(bytes);

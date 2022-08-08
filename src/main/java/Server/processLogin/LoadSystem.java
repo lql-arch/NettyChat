@@ -1,13 +1,14 @@
 package Server.processLogin;
 
 import Server.ChatServer;
-import Server.SimpleChannelHandler.LoadGroupNewsHandler;
+import client.normal.Chat_group;
+import client.normal.Chat_record;
+import client.normal.GroupChat_text;
 import config.DbUtil;
 import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.security.Key;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
@@ -336,27 +337,14 @@ public class LoadSystem{
 
         List<GroupChat_text> gcts = new ArrayList<>();
         Map<String, String> uidNameMap = new HashMap<>();
+        Timestamp timestamp = Timestamp.valueOf(msg.getLastTime());
 
-        ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ? and isNotice = false order by id");
-        ps.setObject(1,msg.getGid());
-        ps.setObject(2,msg.getLastTime());
-        rs = ps.executeQuery();
-        while(rs.next()){
-            String rg_uid = rs.getString("uid");
-            String rg_test = rs.getString("text");
-            Timestamp ts = rs.getTimestamp("time");
-            GroupChat_text gct = new GroupChat_text();
-            gct.setTime(ts);
-            gct.setUid(rg_uid);
-            gct.setText(rg_test);
-            gcts.add(gct);
-        }
-
-        ps = con.prepareStatement("select name from members.user where uid = ?;");
+        ps = con.prepareStatement("select name from members.user where uid = ?;");//群主
         ps.setObject(1,msg.getUid());
         rs = ps.executeQuery();
         if(rs.next()){
             msg.setMasterName(rs.getString("name"));
+            uidNameMap.put(msg.getUid(),rs.getString("name"));
         }
 
         for (String t : msg.getAdministrator()) {
@@ -375,6 +363,32 @@ public class LoadSystem{
                 uidNameMap.put(t,rs.getString("name"));
             }
         }
+        
+        ps = con.prepareStatement("select last_msg_id from chat_group.group_user where gid = ? and uid = ?");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,msg.getUid());
+        rs = ps.executeQuery();
+        if(rs.next()){
+            timestamp = rs.getTimestamp("last_msg_id");
+        }
+
+        ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time >= ? and isNotice = false order by id");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,timestamp);
+        rs = ps.executeQuery();
+        while(rs.next()){
+            String rg_uid = rs.getString("uid");
+            String rg_test = rs.getString("text");
+            Timestamp ts = rs.getTimestamp("time");
+            GroupChat_text gct = new GroupChat_text();
+            gct.setDate(ts.toString());
+            gct.setUid(rg_uid);
+            gct.setText(rg_test);
+            gct.setMyName(uidNameMap.get(rg_uid));
+            gcts.add(gct);
+        }
+
+
 
         msg.setUidNameMap(uidNameMap);
         msg.setGroupMessages(gcts);

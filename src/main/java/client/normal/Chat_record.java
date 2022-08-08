@@ -1,4 +1,4 @@
-package message;
+package client.normal;
 
 import java.sql.Timestamp;
 

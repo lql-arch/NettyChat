@@ -1,5 +1,6 @@
 package message;
 
+import client.normal.Chat_record;
 import lombok.Data;
 
 import java.util.List;

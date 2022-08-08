@@ -3,6 +3,7 @@ package client.System;
 
 import client.SimpleChannelHandler.FileReadHandler;
 import client.Start;
+import client.normal.Chat_record;
 import io.netty.channel.ChannelHandlerContext;
 import message.*;
 import org.apache.logging.log4j.LogManager;

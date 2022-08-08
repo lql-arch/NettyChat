@@ -6,16 +6,14 @@ import client.System.ChatSystem;
 import config.DbUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import message.RequestMessage;
-import message.ReviseGroupMemberMessage;
-import message.ReviseMsgStatusMessage;
-import message.ReviseMessage;
+import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 public class ReviseMaterial {
     private static final Logger log = LogManager.getLogger();
@@ -136,6 +134,17 @@ public class ReviseMaterial {
         ps.setObject(1,msg.getUid());
         ps.setObject(2, msg.getGid());
 
+        ps.execute();
+    }
+
+    public static void reviseLastTime(GroupStringMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("update chat_group.group_user set last_msg_id = ? where gid = ? and uid = ?");
+        ps.setObject(1, Timestamp.valueOf(msg.getTime()));
+        ps.setObject(2,msg.getGid());
+        ps.setObject(3,msg.getUid());
         ps.execute();
     }
 

@@ -1,5 +1,7 @@
 package message;
 
+import client.normal.Chat_group;
+import client.normal.Chat_record;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 

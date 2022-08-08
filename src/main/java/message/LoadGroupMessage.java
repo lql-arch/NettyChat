@@ -1,5 +1,6 @@
 package message;
 
+import client.normal.GroupChat_text;
 import lombok.Data;
 
 import java.util.List;

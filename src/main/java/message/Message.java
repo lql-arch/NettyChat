@@ -37,6 +37,7 @@ public abstract class Message implements Serializable {
     public static final int FindGroupMessage = 14;
     public static final int ReviseGroupMemberMessage = 15;
     public static final int GroupNoticeMessage = 16;
+    public static final int GroupStringMessage = 17;
 
     public static final Map<Integer,Class<? extends Message>> map = new HashMap<>();
 
@@ -57,6 +58,7 @@ public abstract class Message implements Serializable {
         map.put(FindGroupMessage,FindGroupMessage.class);
         map.put(ReviseGroupMemberMessage,ReviseGroupMemberMessage.class);
         map.put(GroupNoticeMessage,GroupNoticeMessage.class);
+        map.put(GroupStringMessage,GroupStringMessage.class);
     }
 
 }

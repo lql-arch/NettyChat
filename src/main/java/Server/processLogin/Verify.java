@@ -3,6 +3,7 @@ package Server.processLogin;
 import Server.ChatServer;
 import config.DbUtil;
 import message.FindMessage;
+import message.GroupStringMessage;
 import message.RequestMessage;
 import message.StringMessage;
 
@@ -10,6 +11,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Verify {
     public static boolean verifyPassword(FindMessage msg) throws SQLException {//查询密码的对错
@@ -76,4 +79,18 @@ public class Verify {
         return false;
     }
 
+    public static List<String> verifyGroupMembers(GroupStringMessage msg) throws SQLException {
+        List<String> uid = new ArrayList<>();
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = conn.prepareStatement("select uid from chat_group.group_user where gid = ?");
+        ps.setObject(1,msg.getText().getGid());
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            uid.add(rs.getString("uid"));
+        }
+
+        return uid;
+    }
 }

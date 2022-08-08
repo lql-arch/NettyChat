@@ -14,7 +14,6 @@ import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -210,6 +209,7 @@ public class Start {
                             ch.pipeline().addLast(new FindGroupHandler());
                             ch.pipeline().addLast(new ReviseGroupMemberHandler());
                             ch.pipeline().addLast(new GroupNoticeHandler());
+                            ch.pipeline().addLast(new GroupStringHandler());
 
                         }
                     }).connect("192.168.30.100", 8100);
@@ -310,7 +310,7 @@ public class Start {
                 case "8":
                     break;
                 default:
-                    System.out.println("输入错误，请重新尝试");
+                    System.err.println("输入错误，请重新尝试");
                     break;
             }
         }

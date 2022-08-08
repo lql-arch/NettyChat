@@ -1,12 +1,12 @@
 package Server.SimpleChannelHandler;
 
+import Server.ChatServer;
 import Server.processLogin.LoadSystem;
 import Server.processLogin.Storage;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import message.LoadGroupMessage;
-
-import java.sql.Timestamp;
 
 public class LoadGroupNewsHandler extends SimpleChannelInboundHandler<LoadGroupMessage> {
     @Override
@@ -17,7 +17,8 @@ public class LoadGroupNewsHandler extends SimpleChannelInboundHandler<LoadGroupM
             return;
         }
         LoadSystem.loadGroupMessages(msg);
-        ctx.channel().writeAndFlush(msg);
+        Channel channel = ChatServer.uidChannelMap.get(msg.getUid());
+        channel.writeAndFlush(msg);
     }
 
 

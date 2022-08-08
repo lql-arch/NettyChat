@@ -2,11 +2,8 @@ package client.System;
 
 import client.SimpleChannelHandler.FileMsgHandler;
 import client.Start;
+import client.normal.Chat_record;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoop;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +13,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.Callable;
 
 import static client.Start.uid;
 

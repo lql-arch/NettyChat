@@ -3,19 +3,47 @@ package client.System;
 import client.SimpleChannelHandler.GroupNoticeHandler;
 import client.SimpleChannelHandler.LoadGroupNewsHandler;
 import client.Start;
+import client.normal.Chat_group;
+import client.normal.GroupChat_text;
 import io.netty.channel.ChannelHandlerContext;
 import message.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static client.Start.*;
 import static client.System.ChatSystem.friendMaterial;
 import static client.System.ChatSystem.isDigit;
 
 public class GroupSystem {
+    public static AtomicBoolean groupChat = new AtomicBoolean(true);
+    public static volatile Map<String,List<GroupChat_text>> groupChat_texts = new HashMap<>();
+    public static Map<String,Boolean> groupIsRead = new HashMap<>();
+
+    public static GroupChat_text addGroupChat_texts(String uid,String gid,String time,String name,String text){
+        GroupChat_text groupChat_text = new GroupChat_text();
+        groupChat_text.setText(text);
+        groupChat_text.setUid(uid);
+        groupChat_text.setDate(time);
+        groupChat_text.setMyName(name);
+        groupChat_text.setGid(gid);
+
+
+//        List<GroupChat_text> t;
+//        if((t = groupChat_texts.get(gid)) != null){
+//            t.add(groupChat_text);
+//        }else{
+//            t = new ArrayList<>();
+//            t.add(groupChat_text);
+//            groupChat_texts.put(gid,t);
+//        }
+
+        return groupChat_text;
+    }
 
     @NotNull
     private static LoadGroupMessage getLoadGroupMessage(Chat_group cg) {
@@ -134,6 +162,8 @@ public class GroupSystem {
 
                     showChatGroup(ctx, lgm);
                     break;
+                }else{
+                    System.err.println("输入错误");
                 }
             }
         }
@@ -142,13 +172,13 @@ public class GroupSystem {
 
 
     public static void showChatGroup(ChannelHandlerContext ctx,LoadGroupMessage lgm) throws InterruptedException, IOException {
-        ctx.channel().writeAndFlush(lgm);
-        Start.semaphore.acquire();
-        LoadGroupMessage msg = LoadGroupNewsHandler.groupMessage;
-        lgm.setGroupMessages(msg.getGroupMessages());
-        lgm.setMasterName(msg.getMasterName());
-
         while(true) {
+            ctx.channel().writeAndFlush(lgm);
+            Start.semaphore.acquire();
+            LoadGroupMessage msg = LoadGroupNewsHandler.groupMessage;
+            lgm.setGroupMessages(msg.getGroupMessages());
+            lgm.setMasterName(msg.getMasterName());
+
             boolean flag = true;
             System.out.println("---------------------------------------------");
             System.out.println("\tgid:" + lgm.getGid());
@@ -157,11 +187,11 @@ public class GroupSystem {
             System.out.println("\t创建时间" + lgm.getTime());
             System.out.println("\t人数：" + lgm.getMembersCount());
             System.out.print("---------------------------------------------\n");
-            System.out.print("\t1.进入群聊\t2.查看群文件\t3.查看群成员\t4.返回\n");
+            System.out.print("\t1.进入群聊\t2.查看群历史记录\t3.查看群文件\n\t4.查看群成员\t5.返回\n");
             if (lgm.getGroup_master().compareTo(uid) == 0)
-                System.out.println("\t5.禁言群员\t6.解散群聊");
+                System.out.println("\t6.禁言群员\t7.解散群聊");
             if (lgm.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0))
-                System.out.println("\t5.禁言群员\t");
+                System.out.println("\t6.禁言群员\t");
             System.out.println("---------------------------------------------");
             while (flag) {
                 flag = false;
@@ -176,22 +206,25 @@ public class GroupSystem {
                         enterGroupChat(ctx, lgm);
                         break;
                     case 2:
-                        viewGroupFiles(ctx, lgm);
+                        verifyHistoricalNews(ctx,lgm);
                         break;
                     case 3:
-                        viewGroupMembers(ctx, lgm);
+                        viewGroupFiles(ctx, lgm);
                         break;
                     case 4:
-                        return;
+                        viewGroupMembers(ctx, lgm);
+                        break;
                     case 5:
+                        return;
+                    case 6:
                         if (lgm.getGroup_master().compareTo(uid) == 0 || lgm.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0)) {
                             bannedMembers(ctx, lgm);
                             break;
                         }
-                    case 6:
+                    case 7:
                         if (lgm.getGroup_master().compareTo(uid) == 0) {
                             disbandTheGroupChat(ctx, lgm);
-                            break;
+                            return;
                         }
                     default:
                         flag = true;
@@ -244,8 +277,6 @@ public class GroupSystem {
         Iterator<GroupNoticeMessage.Notice> notices = gnm.getNotices().listIterator();
         Timestamp one = null,second = null;
         System.out.println("---------------------------------------------");
-        System.out.println("\t\t\t输入\"quit\"返回");
-        System.out.println("---------------------------------------------");
         while(notices.hasNext()){
             GroupNoticeMessage.Notice iter = notices.next();
             if(one == null) {
@@ -290,10 +321,69 @@ public class GroupSystem {
         }
     }
 
-    public static void enterGroupChat(ChannelHandlerContext ctx,LoadGroupMessage msg){
+    public static void enterGroupChat(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+        ctx.channel().writeAndFlush(msg);
+        Start.semaphore.acquire();
+        LoadGroupMessage lgm = LoadGroupNewsHandler.groupMessage;
+        String str;
+        Timestamp date = Timestamp.valueOf(LocalDateTime.now());
+        try{
+            System.out.println("---------------------------------------------");
+            System.out.println("\t\t\t" + msg.getGroupName() + "(输入EXIT退出)\t");
+            System.out.println("---------------------------------------------");
+            showHistory(lgm, msg.getGid());
+            groupChat.compareAndSet(false, true);
+            while ((str = new Scanner(System.in).nextLine()).compareToIgnoreCase("exit") != 0) {
+                date = Timestamp.valueOf(LocalDateTime.now());
+//            System.out.println(lgm.getUidNameMap().get(lgm.getUid())+": "+str);
+                GroupChat_text text = addGroupChat_texts(lgm.getUid(), lgm.getGid(), date.toString(), lgm.getUidNameMap().get(lgm.getUid()), str);
+                ctx.writeAndFlush(new GroupStringMessage().setText(text));
+            }
+            groupChat.compareAndSet(true, false);
+            System.out.println("---------------------------------------------");
+        }finally {
+            ctx.writeAndFlush(new GroupStringMessage().setReviseLastTime(true).setGid(lgm.getGid()).setUid(uid).setTime(date.toString()));//修改last_time
+        }
+    }
 
-        System.out.println("---------------------------------------------");
-        
+    public static void showHistory(LoadGroupMessage msg,String gid){
+        Timestamp one = null,second = null;
+        if(groupIsRead.get(gid) == null){
+            groupIsRead.put(gid,true);
+            List<GroupChat_text> messages = msg.getGroupMessages();
+            if(messages == null){
+                messages = new ArrayList<>();
+            }
+
+            synchronized (GroupSystem.class) {
+                List<GroupChat_text> t;
+                if ((t = groupChat_texts.get(gid)) != null) {
+                    GroupChat_text gct = messages.get(messages.size() - 1);
+                    for (GroupChat_text groupChat_text : t) {
+                        if (Timestamp.valueOf(gct.getDate()).before(Timestamp.valueOf(groupChat_text.getDate()))) {
+                            messages.add(groupChat_text);
+                        }
+                    }
+                    groupChat_texts.put(gid, messages);
+                } else {
+                    groupChat_texts.put(gid, messages);
+                }
+            }
+        }
+        for(GroupChat_text gct : groupChat_texts.get(gid)){
+            if(one == null){
+                one = Timestamp.valueOf(gct.getDate());
+                System.out.println(one);
+            }else{
+                one = Timestamp.valueOf(gct.getDate());
+                if(one.getTime() - second.getTime() >= 5*60*1000){
+                    System.out.println(one);
+                }
+            }
+            System.out.println(gct.getMyName()+":"+gct.getText());
+            second = one;
+        }
+
     }
 
     public static void viewGroupFiles(ChannelHandlerContext ctx,LoadGroupMessage msg){
@@ -480,5 +570,9 @@ public class GroupSystem {
             ctx.writeAndFlush(rgmm);
             semaphore.acquire();
         }
+    }
+
+    public static void verifyHistoricalNews(ChannelHandlerContext ctx,LoadGroupMessage msg){
+
     }
 }
