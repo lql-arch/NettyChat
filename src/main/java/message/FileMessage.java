@@ -12,12 +12,18 @@ public class FileMessage extends Message{
     private String path;
     private long fileLen;
     private byte[] bytes;
-    private int startPos;
+    private long startPos;
     private int endPos;
     private boolean person = true;
+    private String time;
+    //单人文件
     private UserMessage user;
     private UserMessage me;
-    private String time;
+    //群文件
+    private String gid;
+    private String uid;
+    private String myUid;
+
     private boolean readOrWrite;//true = read , false = write
 
     public FileMessage setReadOrWrite(boolean readOrWrite){

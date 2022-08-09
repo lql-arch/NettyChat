@@ -16,6 +16,7 @@ public class LoadGroupNewsHandler extends SimpleChannelInboundHandler<LoadGroupM
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, LoadGroupMessage msg) throws Exception {
         groupMessage = msg;
+
         Start.semaphore.release();
     }
 }

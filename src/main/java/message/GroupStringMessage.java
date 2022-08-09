@@ -10,6 +10,7 @@ public class GroupStringMessage extends Message{
     private String gid;
     private String uid;
     private String time;
+    private boolean banned;
 
     public GroupStringMessage setText(GroupChat_text groupChat_text){
         this.text = groupChat_text;
@@ -28,6 +29,11 @@ public class GroupStringMessage extends Message{
 
     public GroupStringMessage setTime(String time){
         this.time = time;
+        return this;
+    }
+
+    public GroupStringMessage setBanned(Boolean banned){
+        this.banned = banned;
         return this;
     }
 

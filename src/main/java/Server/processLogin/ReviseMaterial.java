@@ -10,10 +10,7 @@ import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 
 public class ReviseMaterial {
     private static final Logger log = LogManager.getLogger();
@@ -146,6 +143,43 @@ public class ReviseMaterial {
         ps.setObject(2,msg.getGid());
         ps.setObject(3,msg.getUid());
         ps.execute();
+    }
+
+    public static void reviseGroupBanned(GroupStringMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        ResultSet rs;
+        boolean banned = true;
+
+        if(msg.getUid() == null) {
+            ps = con.prepareStatement("select banned from chat_group.group_user where gid = ? and group_master = false and administrator = false");
+            ps.setObject(1,msg.getGid());
+            rs = ps.executeQuery();
+            while(rs.next()){
+                banned = rs.getBoolean("banned") & banned ;
+            }
+
+            ps = con.prepareStatement("update chat_group.group_user set banned = ? where gid = ? ");
+            ps.setObject(1,!banned);
+            ps.setObject(2,msg.getGid());
+
+        }else{
+            ps = con.prepareStatement("select banned from chat_group.group_user where gid = ? and uid = ?");
+            ps.setObject(1,msg.getGid());
+            ps.setObject(2,msg.getUid());
+            rs = ps.executeQuery();
+            if(rs.next()){
+                banned = rs.getBoolean("banned");
+            }
+
+            ps = con.prepareStatement("update chat_group.group_user set banned = ? where gid = ? and uid = ?");
+            ps.setObject(1,!banned);
+            ps.setObject(2,msg.getGid());
+            ps.setObject(3,msg.getUid());
+        }
+
+        ps.execute();
+
     }
 
 }

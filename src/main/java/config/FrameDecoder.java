@@ -5,7 +5,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 public class FrameDecoder extends LengthFieldBasedFrameDecoder {
 
     public FrameDecoder() {
-        this(1024*1024*8, 8, 4, 4, 0);
+        this(1024*1024*64, 8, 4, 4, 0);
     }
 
     public FrameDecoder(int maxFrameLength, int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment, int initialBytesToStrip) {

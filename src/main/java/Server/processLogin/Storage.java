@@ -175,4 +175,17 @@ public class Storage {
 
     }
 
+    public static void storageGroupFiles(String path,FileMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("insert into chat_group.group_file (gid, file_name, file_path, sender_uid, time) values (?,?,?,?,?);");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,msg.getName());
+        ps.setObject(3,path);
+        ps.setObject(4,msg.getUid());
+        ps.setObject(5,Timestamp.valueOf(msg.getTime()));
+        ps.execute();
+    }
+
 }

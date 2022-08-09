@@ -14,6 +14,12 @@ import java.util.List;
 public class GroupStringHandler extends SimpleChannelInboundHandler<GroupStringMessage> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GroupStringMessage msg) throws Exception {
+        if(msg.isBanned()){
+            ReviseMaterial.reviseGroupBanned(msg);
+            ctx.writeAndFlush(msg);
+            return;
+        }
+
         if(msg.isReviseLastTime()){//修改last
             ReviseMaterial.reviseLastTime(msg);
             return;

@@ -1,5 +1,6 @@
 package client.SimpleChannelHandler;
 
+import client.Start;
 import client.System.GroupSystem;
 import client.normal.GroupChat_text;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,6 +15,11 @@ import static client.System.GroupSystem.groupChat_texts;
 public class GroupStringHandler extends SimpleChannelInboundHandler<GroupStringMessage> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GroupStringMessage msg) throws Exception {
+        if(msg.isBanned()){
+            System.out.println("禁言设置完成");
+            Start.semaphore.release();
+        }
+
         if(GroupSystem.groupChat.get()){
             System.out.println(msg.getText().getMyName()+": "+msg.getText().getText());
         }

@@ -17,7 +17,7 @@ public class FileTransfer {
     private static final Logger log = LogManager.getLogger();
     public static void storeFiles(ChannelHandlerContext ctx, FileMessage msg, String file_dir) throws FileNotFoundException, SQLException {
         int readLen = msg.getEndPos();
-        int start = msg.getStartPos();
+        long start = msg.getStartPos();
         String path = file_dir + File.separator + msg.getName();
         if(start == 0)
             storageFiles(msg.getName(),path,msg, false);

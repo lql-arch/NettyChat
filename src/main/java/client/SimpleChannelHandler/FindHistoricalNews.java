@@ -7,6 +7,7 @@ import message.HistoricalNews;
 
 public class FindHistoricalNews extends SimpleChannelInboundHandler<HistoricalNews> {
     public static HistoricalNews historicalNews;
+    public static HistoricalNews groupHistoricalNews;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HistoricalNews msg) throws Exception {
@@ -14,7 +15,8 @@ public class FindHistoricalNews extends SimpleChannelInboundHandler<HistoricalNe
             historicalNews = msg;
             Start.semaphore.release();
         }else{
-
+            groupHistoricalNews = msg;
+            Start.semaphore.release();
         }
     }
 }

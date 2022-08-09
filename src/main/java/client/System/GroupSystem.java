@@ -1,5 +1,7 @@
 package client.System;
 
+import client.SimpleChannelHandler.FileReadHandler;
+import client.SimpleChannelHandler.FindHistoricalNews;
 import client.SimpleChannelHandler.GroupNoticeHandler;
 import client.SimpleChannelHandler.LoadGroupNewsHandler;
 import client.Start;
@@ -9,7 +11,9 @@ import io.netty.channel.ChannelHandlerContext;
 import message.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -174,6 +178,7 @@ public class GroupSystem {
     public static void showChatGroup(ChannelHandlerContext ctx,LoadGroupMessage lgm) throws InterruptedException, IOException {
         while(true) {
             ctx.channel().writeAndFlush(lgm);
+            log.debug("wait");
             Start.semaphore.acquire();
             LoadGroupMessage msg = LoadGroupNewsHandler.groupMessage;
             lgm.setGroupMessages(msg.getGroupMessages());
@@ -187,7 +192,7 @@ public class GroupSystem {
             System.out.println("\t创建时间" + lgm.getTime());
             System.out.println("\t人数：" + lgm.getMembersCount());
             System.out.print("---------------------------------------------\n");
-            System.out.print("\t1.进入群聊\t2.查看群历史记录\t3.查看群文件\n\t4.查看群成员\t5.返回\n");
+            System.out.print("\t1.进入群聊\t2.查看群历史记录\t3.群文件\n\t4.查看群成员\t5.返回\n");
             if (lgm.getGroup_master().compareTo(uid) == 0)
                 System.out.println("\t6.禁言群员\t7.解散群聊");
             if (lgm.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0))
@@ -209,7 +214,7 @@ public class GroupSystem {
                         verifyHistoricalNews(ctx,lgm);
                         break;
                     case 3:
-                        viewGroupFiles(ctx, lgm);
+                        GroupFiles(ctx, lgm);
                         break;
                     case 4:
                         viewGroupMembers(ctx, lgm);
@@ -333,11 +338,18 @@ public class GroupSystem {
             System.out.println("---------------------------------------------");
             showHistory(lgm, msg.getGid());
             groupChat.compareAndSet(false, true);
-            while ((str = new Scanner(System.in).nextLine()).compareToIgnoreCase("exit") != 0) {
-                date = Timestamp.valueOf(LocalDateTime.now());
+            if(!lgm.getUidBanned().get(uid)) {
+                while ((str = new Scanner(System.in).nextLine()).compareToIgnoreCase("exit") != 0) {
+                    date = Timestamp.valueOf(LocalDateTime.now());
 //            System.out.println(lgm.getUidNameMap().get(lgm.getUid())+": "+str);
-                GroupChat_text text = addGroupChat_texts(lgm.getUid(), lgm.getGid(), date.toString(), lgm.getUidNameMap().get(lgm.getUid()), str);
-                ctx.writeAndFlush(new GroupStringMessage().setText(text));
+                    GroupChat_text text = addGroupChat_texts(lgm.getUid(), lgm.getGid(), date.toString(), lgm.getUidNameMap().get(lgm.getUid()), str);
+                    ctx.writeAndFlush(new GroupStringMessage().setText(text));
+                }
+            }else{
+                System.out.println("你已被禁言！");
+                while ((str = new Scanner(System.in).nextLine()).compareToIgnoreCase("exit") != 0) {
+                    System.out.println("你已被禁言！");
+                }
             }
             groupChat.compareAndSet(true, false);
             System.out.println("---------------------------------------------");
@@ -386,7 +398,127 @@ public class GroupSystem {
 
     }
 
-    public static void viewGroupFiles(ChannelHandlerContext ctx,LoadGroupMessage msg){
+    public static void GroupFiles(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+        while (true) {
+        System.out.println("---------------------------------------------");
+        System.out.println("\t1.发送群文件\t2.查看群文件\t3.返回");
+        System.out.println("---------------------------------------------");
+            String choice = new Scanner(System.in).nextLine();
+            if (!isDigit(choice)) {
+                System.err.println("输入错误");
+                continue;
+            }
+            switch (Integer.parseInt(choice)){
+                case 1:
+                    sendGroupFile(ctx,msg);
+                    break;
+                case 2:
+                    viewGroupFile(ctx,msg);
+                    break;
+                case 3:
+                    return;
+                default:
+                    System.err.println("查无此选项");
+                    break;
+            }
+
+        }
+    }
+
+    public static void viewGroupFile(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+        FileRead fileRead = new FileRead();
+        ctx.writeAndFlush(fileRead.setUid(uid).setGid(msg.getGid()).setSingleOrGroup(false));
+        semaphore.acquire();
+
+        fileRead = FileReadHandler.fileRead;
+        Map<String, String> time = fileRead.getFileTimeMap();
+        Map<Integer, String> countMap = new HashMap<>();
+        int count = 1;
+
+        System.out.println("------------------------------------------------------------------------------------------");
+        System.out.println("\t\t\t输入\"exit\"返回");
+        System.out.println("------------------------------------------------------------------------------------------");
+        System.out.printf("%5s\t%20s\t%20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
+        if(fileRead.getFilePersonMap() == null || fileRead.getFileTimeMap() == null){
+            System.out.println("------------------------------------------------------------------------------------------");
+            return;
+        }
+        for (Map.Entry<String, String> person : fileRead.getFilePersonMap().entrySet()) {
+            String name = uidNameMap.get(person.getValue());
+            countMap.put(count, person.getKey());
+            System.out.printf("%5d\t%20s\t%20s\t%20s\n", count++, person.getKey(), name, time.get(person.getKey()));
+        }
+        System.out.println("------------------------------------------------------------------------------------------");
+
+        while (true) {
+            String choice = new Scanner(System.in).nextLine();
+            if (choice.compareToIgnoreCase("exit") == 0) {
+                return;
+            }
+            if (!isDigit(choice)) {
+                System.err.println("输入错误");
+                continue;
+            }
+            int result = Integer.parseInt(choice);
+            if (result < count && result > 0) {
+                FileMessage fm = new FileMessage();
+                String name = countMap.get(result);
+                fm.setName(name);
+                fm.setTime(time.get(name));
+                fm.setMyUid(uid);
+                fm.setUid(fileRead.getFilePersonMap().get(name));
+                fm.setGid(msg.getGid());
+                fm.setStartPos(0);
+                fm.setPath(null);//标志物
+                fm.setPerson(false);
+
+                ctx.writeAndFlush(fm.setReadOrWrite(true));
+                break;
+            }
+        }
+    }
+
+    public static void sendGroupFile(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+        System.out.println("-------------------------------------");
+        System.out.println("\t\t\t\t传输文件");
+        System.out.println("-------------------------------------");
+        System.out.println("请输入您要传输的文件地址：");
+        String pass = new Scanner(System.in).nextLine();
+        File file = new File(pass);
+        if(!file.exists()){
+            if (!file.isFile()) {
+                System.out.println("Not a file :" + file);
+                return;
+            }
+        }
+
+        FileMessage fm = new FileMessage();
+        fm.setStartPos(0);
+
+        try(RandomAccessFile randomAccessFile = new RandomAccessFile(file,"r")) {
+            randomAccessFile.seek(fm.getStartPos());
+            int length = (int) ((file.length() / 10) < 1024*1024*2 ? (file.length() / 10) : 1024*1024*2);
+            byte[] bytes = new byte[length];
+            int read;
+            fm.setName(file.getName());
+            fm.setFileLen(file.length());
+            fm.setPath(file.getPath());
+            if((read = randomAccessFile.read(bytes)) != -1){
+                fm.setBytes(bytes);
+                fm.setEndPos(read);
+                fm.setGid(msg.getGid());
+                fm.setMyUid(uid);
+                fm.setPerson(false);
+                fm.setTime(Timestamp.valueOf(LocalDateTime.now()).toString());
+                System.out.println("等待文件发送完毕");
+                ctx.writeAndFlush(fm.setReadOrWrite(false));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        semaphore.acquire();
 
     }
 
@@ -394,6 +526,7 @@ public class GroupSystem {
         while(true) {
             ctx.writeAndFlush(msg);
             semaphore.acquire();
+            msg = LoadGroupNewsHandler.groupMessage;
 
             int count = 1;
             Map<Integer,String> countMap = new HashMap<>();
@@ -408,13 +541,13 @@ public class GroupSystem {
             for (String aUid : msg.getAdministrator()) {
                 String name = msg.getUidNameMap().get(aUid);
                 countMap.put(count, aUid);
-                System.out.printf("\t%d.%20s\n", count++, name);
+                System.out.printf("\t%d.%20s(%6s)\n", count++, name,msg.getUidBanned().get(aUid) ? "已禁言" : "未禁言");
             }
             System.out.println("\t群员:");
             for (String mUid : msg.getMembers()) {
                 String name = msg.getUidNameMap().get(mUid);
                 countMap.put(count, mUid);
-                System.out.printf("\t%d.%20s", count++, name);
+                System.out.printf("\t%d.%20s(%6s)\n", count++, name,msg.getUidBanned().get(mUid) ? "已禁言" : "未禁言");
             }
 
             while (true) {
@@ -558,8 +691,58 @@ public class GroupSystem {
 
 
 
-    public static void bannedMembers(ChannelHandlerContext ctx,LoadGroupMessage msg){
+    public static void bannedMembers(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+        while(true) {
+            ctx.writeAndFlush(msg);
+            semaphore.acquire();
+            msg = LoadGroupNewsHandler.groupMessage;
 
+            int count = 1;
+            Map<Integer, String> countMap = new HashMap<>();
+
+            System.out.println("---------------------------------------------");
+            System.out.println("\t\t\t members:" + msg.getMembersCount());
+            System.out.println("---------------------------------------------");
+            if(msg.getGroup_master().compareTo(uid) == 0) {
+                System.out.println("\t管理员:");
+                for (String aUid : msg.getAdministrator()) {
+                    String name = msg.getUidNameMap().get(aUid);
+                    countMap.put(count, aUid);
+                    System.out.printf("\t%d.%20s(%6s)\n", count++, name,msg.getUidBanned().get(aUid) ? "已禁言" : "未禁言");
+                }
+            }
+            System.out.println("\t群员:");
+            for (String mUid : msg.getMembers()) {
+                String name = msg.getUidNameMap().get(mUid);
+                countMap.put(count, mUid);
+                System.out.printf("\t%d.%20s(%6s)", count++, name,msg.getUidBanned().get(mUid) ? "已禁言" : "未禁言");
+            }
+            System.out.println("---------------------------------------------");
+
+            while(true){
+                System.out.println("请输入想要禁言/解除禁言对象的序号:(禁言/解除禁言全体输入“all”)(输入\"exit\"退出)");
+                String choice = new Scanner(System.in).nextLine();
+                if(choice.compareToIgnoreCase("exit") == 0){
+                    return;
+                }
+                if(choice.compareToIgnoreCase("all") == 0){
+                    ctx.writeAndFlush(new GroupStringMessage().setGid(msg.getGid()).setBanned(true).setUid(null));//无uid即禁言全体
+                    semaphore.acquire();
+                    continue;
+                }
+                if(isDigit(choice)){
+                    System.err.println("输入错误");
+                    continue;
+                }
+                int result = Integer.parseInt(choice);
+                if(result > 0 && result < count){
+                    ctx.writeAndFlush(new GroupStringMessage().setGid(msg.getGid()).setUid(countMap.get(result)).setBanned(true));
+                    semaphore.acquire();
+                }else{
+                    System.err.println("查无此选项");
+                }
+            }
+        }
     }
 
     public static void disbandTheGroupChat(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
@@ -572,7 +755,71 @@ public class GroupSystem {
         }
     }
 
-    public static void verifyHistoricalNews(ChannelHandlerContext ctx,LoadGroupMessage msg){
+    public static void verifyHistoricalNews(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+        String date;
+        Scanner sc = new Scanner(System.in);
+        Timestamp start;
+        Timestamp end;
 
+        while(true) {
+            System.out.println("----------------------------------------");
+            System.out.println("\t\t\t\t请输入想要查找的时间:(year-month-day),(exit退出)");
+            date = sc.nextLine();
+            System.out.println("----------------------------------------");
+            if (date.compareToIgnoreCase("exit") == 0) {
+                return;
+            }
+            try {
+                String[] dates = date.split("-");
+                start = Timestamp.valueOf(date + " 08:00:00");
+                dates[2] = String.valueOf(Integer.parseInt(dates[2]) + 1);
+                end = Timestamp.valueOf(dates[0] + "-" + dates[1] + "-" + dates[2] + " 08:00:00");
+            } catch (Exception e) {
+                System.err.println("输入错误");
+                continue;
+            }
+
+            HistoricalNews hn = new HistoricalNews();
+            hn.setStartTime(start.toString());
+            hn.setEndTime(end.toString());
+            hn.setGid(msg.getGid());
+            hn.setUid(uid);
+            hn.setPersonOrGroup(false);
+
+            ctx.writeAndFlush(hn);
+            Start.semaphore.acquire();
+
+            showGroupHistory();
+        }
+    }
+
+    public static void showGroupHistory(){
+        HistoricalNews hn = FindHistoricalNews.groupHistoricalNews;
+        Iterator<GroupChat_text> iter = hn.getGroupChat_texts().listIterator();
+        Timestamp one = null;
+        Timestamp second = null;
+        if(hn.getGroupChat_texts() == null){
+            System.out.println("----------------------------------------");
+            System.out.println("null");
+            System.out.println("----------------------------------------");
+            return;
+        }
+
+        System.out.println("----------------------------------------");
+        while(iter.hasNext()){
+            GroupChat_text gct = iter.next();
+            if(one == null){
+                one = Timestamp.valueOf(gct.getDate());
+                System.out.println("\t\t"+one);
+            }else{
+                one = Timestamp.valueOf(gct.getDate());
+                if(one.getTime() - second.getTime() > 1000*60*60){
+                    System.out.println("\t\t"+one);
+                }
+            }
+            System.out.println(gct.getMyName()+":"+gct.getText());
+            second = one;
+        }
+        System.out.println("----------------------------------------");
     }
 }

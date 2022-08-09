@@ -2,7 +2,6 @@ package message;
 
 import lombok.Data;
 
-import java.io.File;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +12,8 @@ public class FileRead extends Message{
     private Map<String ,String> filePersonMap;
     private Map<String ,String> fileTimeMap;
     private String uid;
-    private boolean checkFile;
+    private String gid;
+    private boolean singleOrGroup;//trueOrFalse
 
     public FileRead addFilePersonMap(String file,String person){
         if(filePersonMap == null){
@@ -31,13 +31,18 @@ public class FileRead extends Message{
         return this;
     }
 
-    public FileRead setCheckFile(boolean checkFile){
-        this.checkFile = checkFile;
+    public FileRead setSingleOrGroup(boolean singleOrGroup){
+        this.singleOrGroup = singleOrGroup;
         return this;
     }
 
     public FileRead setUid(String uid){
         this.uid = uid;
+        return this;
+    }
+
+    public FileRead setGid(String gid){
+        this.gid = gid;
         return this;
     }
 

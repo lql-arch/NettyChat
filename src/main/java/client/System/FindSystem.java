@@ -145,7 +145,7 @@ public class FindSystem {
                 System.out.println("\t\t"+one);
             }else{
                 one = cr.getTime();
-                if(one.getNanos() - second.getNanos() > 1000*60*60){
+                if(one.getTime() - second.getTime() > 1000*60*60){
                     System.out.println("\t\t"+one);
                 }
             }

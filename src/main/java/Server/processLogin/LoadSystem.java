@@ -190,35 +190,66 @@ public class LoadSystem{
         return unread_message;
     }
 
-    public static FileRead loadFile(FileRead msg) throws SQLException {
+    public static FileRead loadFile(FileRead msg,boolean isSingle) throws SQLException {
         Connection con = DbUtil.loginMysql().getConn();
         FileRead fileRead = new FileRead();
         PreparedStatement ps;
 
-        ps = con.prepareStatement("select sender_uid,file_name,time from members.store_file where recipient_uid = ?;");
-        ps.setObject(1,msg.getUid());
-        ResultSet rs = ps.executeQuery();
-        while(rs.next()){
-            fileRead.addFilePersonMap(rs.getString("file_name"),rs.getString("sender_uid"));
-            fileRead.addFileTimeMap(rs.getString("file_name"),rs.getTimestamp("time"));
+        if(isSingle) {
+            ps = con.prepareStatement("select sender_uid,file_name,time from members.store_file where recipient_uid = ?;");
+            ps.setObject(1, msg.getUid());
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                fileRead.addFilePersonMap(rs.getString("file_name"), rs.getString("sender_uid"));
+                fileRead.addFileTimeMap(rs.getString("file_name"), rs.getTimestamp("time"));
+            }
+        }else{
+            ps = con.prepareStatement("select file_name,sender_uid,time from chat_group.group_file where gid = ?");
+            ps.setObject(1,msg.getGid());
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                fileRead.addFilePersonMap(rs.getString("file_name"), rs.getString("sender_uid"));
+                fileRead.addFileTimeMap(rs.getString("file_name"), rs.getTimestamp("time"));
+            }
         }
 
         return fileRead;
     }
 
-    public static void loadReadFile(FileMessage msg) throws SQLException {
+    public static String loadReadFile(FileMessage msg) throws SQLException {
         Connection con = DbUtil.getDb().getConn();
         PreparedStatement ps;
+        String path;
 
-//        log.debug(msg.getName()+" "+msg.getMe().getUid()+" "+msg.getTime());
-        ps = con.prepareStatement("select file_path from members.store_file where file_name = ? and sender_uid = ? and time = ?");
-        ps.setObject(1,msg.getName());
-        ps.setObject(2,msg.getMe().getUid());
-        ps.setObject(3,Timestamp.valueOf(msg.getTime()));
-        ResultSet rs = ps.executeQuery();
-        while(rs.next()){
-            msg.setPath(rs.getString("file_path"));
+        if(msg.isPerson()) {
+            ps = con.prepareStatement("select file_path from members.store_file where file_name = ? and sender_uid = ? and time = ?");
+            ps.setObject(1, msg.getName());
+            ps.setObject(2, msg.getMe().getUid());
+            ps.setObject(3, Timestamp.valueOf(msg.getTime()));
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                path = rs.getString("file_path");
+                msg.setPath(msg.getName());
+            }else{
+                path = null;
+                msg.setPath(null);
+            }
+        }else{
+            ps = con.prepareStatement("select file_path from chat_group.group_file where gid = ? and sender_uid = ? and time = ?");
+            ps.setObject(1,msg.getGid());
+            ps.setObject(2,msg.getUid());
+            ps.setObject(3,Timestamp.valueOf(msg.getTime()));
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()){
+                path = rs.getString("file_path");
+                msg.setPath(msg.getName());
+            }else{
+                path = null;
+                msg.setPath(null);
+            }
         }
+        
+        return path;
     }
 
     public static void loadHistory(HistoricalNews msg) throws SQLException {
@@ -337,6 +368,7 @@ public class LoadSystem{
 
         List<GroupChat_text> gcts = new ArrayList<>();
         Map<String, String> uidNameMap = new HashMap<>();
+        Map<String,Boolean> uidBanned = new HashMap<>();
         Timestamp timestamp = Timestamp.valueOf(msg.getLastTime());
 
         ps = con.prepareStatement("select name from members.user where uid = ?;");//群主
@@ -388,8 +420,14 @@ public class LoadSystem{
             gcts.add(gct);
         }
 
+        ps = con.prepareStatement("select banned,uid from chat_group.group_user where gid = ?");
+        ps.setObject(1,msg.getGid());
+        rs = ps.executeQuery();
+        while(rs.next()){
+            uidBanned.put(rs.getString("uid"),rs.getBoolean("banned"));
+        }
 
-
+        msg.setUidBanned(uidBanned);
         msg.setUidNameMap(uidNameMap);
         msg.setGroupMessages(gcts);
         return msg;
@@ -464,7 +502,43 @@ public class LoadSystem{
                 msg.addNotice(notice);
             }
         }
+    }
 
+    public static void loadGroupHistory(HistoricalNews msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        ResultSet rs;
+        List<GroupChat_text> gcts = new ArrayList<>();
 
+        ps = con.prepareStatement("select time, text,uid from chat_group.group_msg where gid = ? and time >= ? and time < ? order by id");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2, Timestamp.valueOf(msg.getStartTime()));
+        ps.setObject(3,Timestamp.valueOf(msg.getEndTime()));
+        rs = ps.executeQuery();
+        while(rs.next()){
+            String name;
+            Timestamp time = rs.getTimestamp("time");
+            String text = rs.getString("text");
+            String uid = rs.getString("uid");
+            GroupChat_text gct = new GroupChat_text();
+            gct.setGid(msg.getGid());
+            gct.setText(text);
+            gct.setUid(uid);
+            gct.setDate(time.toString());
+
+            PreparedStatement ps1 = con.prepareStatement("select name from members.user where uid = ?");
+            ps1.setObject(1,uid);
+            ResultSet rs1 = ps1.executeQuery();
+            if(rs1.next())
+                name = rs1.getString("name");
+            else{
+                name = uid;
+            }
+
+            gct.setMyName(name);
+            gcts.add(gct);
+        }
+
+        msg.setGroupChat_texts(gcts);
     }
 }

@@ -285,7 +285,7 @@ public class ChatSystem {
 
     public static void fileMsg(ChannelHandlerContext ctx,String friend_uid,boolean isPub) throws InterruptedException {
         while(true) {
-            ctx.writeAndFlush(new FileRead().setCheckFile(true).setUid(uid));
+            ctx.writeAndFlush(new FileRead().setSingleOrGroup(true).setUid(uid));
             semaphore.acquire();
             FileRead fileRead = FileReadHandler.fileRead;
             Map<String, String> time = fileRead.getFileTimeMap();
