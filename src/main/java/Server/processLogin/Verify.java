@@ -93,4 +93,24 @@ public class Verify {
 
         return uid;
     }
+
+    public static boolean verifyIsGroupMember(RequestMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        boolean result = false;//是否是群员
+
+        ps = con.prepareStatement("select uid from chat_group.group_user where gid = ? and uid = ?");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,msg.getRequestPerson().getUid());
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            String uid = rs.getString("uid");
+            if(uid.equals(msg.getRequestPerson().getUid())) {
+                result = true;
+            }
+        }
+        msg.setFriend(result);
+
+        return result;
+    }
 }

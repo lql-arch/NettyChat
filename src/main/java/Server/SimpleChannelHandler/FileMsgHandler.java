@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import static Server.processLogin.Delete.DeleteGroupFile;
 import static Server.processLogin.Storage.storageGroupFiles;
 
 public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
@@ -35,6 +36,13 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FileMessage msg) throws Exception {
+        if(msg.isDeleteFile()){
+            if(!msg.isPerson()){
+                DeleteGroupFile(msg);
+                ChatServer.uidChannelMap.get(msg.getMyUid()).writeAndFlush(msg);
+            }
+            return;
+        }
         if(msg.isReadOrWrite()){//向外传输文件
             if(msg.isPerson()) {
                 if (msg.getPath() == null)
@@ -133,7 +141,9 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         File file = new File(path);
         if(!file.exists()){
             channel.writeAndFlush(msg);
+            return;
         }
+        msg.setFileLen(file.length());
         int length = (int)(file.length()/10 < 1024 * 1024 * 4 ? file.length()/10 : 1024 * 1024 * 4);
         byte[] bytes = new byte[length];
         int lastLength;

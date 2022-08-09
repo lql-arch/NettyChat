@@ -23,8 +23,15 @@ public class FileMessage extends Message{
     private String gid;
     private String uid;
     private String myUid;
+    private boolean deleteFile;
 
     private boolean readOrWrite;//true = read , false = write
+
+
+    public FileMessage setDeleteFile(boolean deleteFile){
+        this.deleteFile = deleteFile;
+        return this;
+    }
 
     public FileMessage setReadOrWrite(boolean readOrWrite){
         this.readOrWrite = readOrWrite;

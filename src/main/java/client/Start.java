@@ -190,18 +190,7 @@ public class Start {
                                     message.add(msg);
                                 }
                             });
-                            ch.pipeline().addLast(new SimpleChannelInboundHandler<RequestMessage>() {
-                                @Override
-                                protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
-                                    if(msg.isFriend()){
-                                        System.err.println("你与目标已经是好友了！");
-                                        semaphore.release();
-                                    }else{
-                                        System.out.println(msg.getNotice());
-                                        semaphore.release();
-                                    }
-                                }
-                            });
+                            ch.pipeline().addLast(new RequestHandler());
                             ch.pipeline().addLast(new FileMsgHandler());
                             ch.pipeline().addLast(new FileReadHandler());
                             ch.pipeline().addLast(new FindHistoricalNews());
@@ -210,6 +199,7 @@ public class Start {
                             ch.pipeline().addLast(new ReviseGroupMemberHandler());
                             ch.pipeline().addLast(new GroupNoticeHandler());
                             ch.pipeline().addLast(new GroupStringHandler());
+                            ch.pipeline().addLast(new ShowHandler());
 
                         }
                     }).connect("192.168.30.100", 8100);
@@ -296,13 +286,13 @@ public class Start {
                     FindSystem.FindUid(ctx);
                     break;
                 case "4":
-                    ChatSystem.unreadMessage(ctx,load);
+                    ChatSystem.unreadMessage(ctx);
                     break;
                 case "5":
                     MaterialSystem.myMaterial(ctx);
                     break;
                 case "6":
-                    MaterialSystem.blacklist(load,ctx);
+                    MaterialSystem.blacklist(ctx);
                     break;
                 case "7":
                     ctx.channel().close();

@@ -1,35 +1,19 @@
 package message;
 
-import com.alibaba.fastjson2.annotation.JSONField;
-
 public class RequestMessage extends Message{
     private boolean clearMsg;
     private UserMessage requestPerson;
     private UserMessage recipientPerson;
     private String notice;
-    private boolean Friend;//判断是否已是好友
+    private boolean Friend;//判断是否已是好友/是否已入群
     private boolean Confirm;//双方确认添加好友
     private boolean AddOrDelete;
     //过程： true:add,false:delete
 
-    public RequestMessage(){}
-//    public RequestMessage(boolean isFriend){
-//        this.isFriend = isFriend;
-//        this.isConfirm = false;
-//    }
-//    public RequestMessage(UserMessage requestPerson,UserMessage recipientPerson,boolean isAddOrDelete){
-//        this.recipientPerson = recipientPerson;
-//        this.requestPerson = requestPerson;
-//        this.isFriend = true;
-//        this.isAddOrDelete = isAddOrDelete;
-//    }
+    private String gid;
+    private boolean groupORSingle;
 
-//    public RequestMessage(UserMessage requestPerson,UserMessage recipientPerson,boolean isConfirm,boolean isFriend){
-//        this.recipientPerson = recipientPerson;
-//        this.requestPerson = requestPerson;
-//        this.isConfirm = isConfirm;
-//        this.isFriend = isFriend;
-//    }
+    public RequestMessage(){}
 
     public String getNotice() {
         return notice;
@@ -37,6 +21,24 @@ public class RequestMessage extends Message{
 
     public RequestMessage setNotice(String notice) {
         this.notice = notice;
+        return this;
+    }
+
+    public RequestMessage setGid(String gid){
+        this.gid = gid;
+        return this;
+    }
+
+    public String getGid() {
+        return gid;
+    }
+
+    public boolean isGroupORSingle() {
+        return groupORSingle;
+    }
+
+    public RequestMessage setGroupORSingle(boolean groupORSingle) {
+        this.groupORSingle = groupORSingle;
         return this;
     }
 
@@ -49,12 +51,12 @@ public class RequestMessage extends Message{
         return this;
     }
 
-    public RequestMessage setRequestPerson(message.UserMessage requestPerson) {
+    public RequestMessage setRequestPerson(UserMessage requestPerson) {
         this.requestPerson = requestPerson;
         return this;
     }
 
-    public RequestMessage setRecipientPerson(message.UserMessage recipientPerson) {
+    public RequestMessage setRecipientPerson(UserMessage recipientPerson) {
         this.recipientPerson = recipientPerson;
         return this;
     }

@@ -81,6 +81,18 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FileMessage msg) throws Exception {
+        if(msg.isDeleteFile()){
+            if(!msg.isPerson()){
+                if(msg.getPath() == null){
+                    System.err.println("查无此文件，请刷新后重试");
+                }else{
+                    System.out.println("删除成功");
+                }
+                Start.semaphore.release();
+            }
+            return;
+        }
+
         if(msg.isPerson()) {
             if (msg.isReadOrWrite()) {
                 receiveFiles(ctx, msg);
@@ -126,7 +138,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     }
 
     public static void receiveGroupFiles(ChannelHandlerContext ctx, FileMessage msg){
-        if(msg.getName().compareTo(msg.getPath()) == 0){
+        if(msg.getName().compareTo(msg.getPath()) != 0 && msg.getStartPos() == 0){
             System.err.println("查无此文件");
             return;
         }
@@ -143,9 +155,10 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             raf.write(bytes);
             start += read;
 //            log.debug("start = {}",start);
-
-            if(start == msg.getFileLen()){
-                log.debug("写入完毕");
+            time(start,msg.getFileLen());
+            if(start >= msg.getFileLen()){
+//                log.debug("写入完毕");
+                Start.semaphore.release();
             }
 
         }catch (IOException e){

@@ -208,6 +208,7 @@ public class LoadSystem{
             ps.setObject(1,msg.getGid());
             ResultSet rs = ps.executeQuery();
             while(rs.next()){
+//                log.debug(rs.getString("file_name")+" "+rs.getString("sender_uid")+" "+rs.getTimestamp("time"));
                 fileRead.addFilePersonMap(rs.getString("file_name"), rs.getString("sender_uid"));
                 fileRead.addFileTimeMap(rs.getString("file_name"), rs.getTimestamp("time"));
             }
@@ -437,7 +438,7 @@ public class LoadSystem{
         Connection con = DbUtil.getDb().getConn();
         PreparedStatement ps;
 
-        ps = con.prepareStatement("select group_name,create_time,members_num from chat_group.`group` where gid = ? order by id ");
+        ps = con.prepareStatement("select group_name,create_time,members_num from chat_group.`group` where gid = ? and isRemoved = false order by id ");
         ps.setObject(1,msg.getGid());
         ResultSet rs = ps.executeQuery();
         if(rs.next()){
@@ -462,7 +463,7 @@ public class LoadSystem{
         }
     }
 
-    public static void loadGroupNotice(GroupNoticeMessage msg) throws SQLException {
+    public static void loadGroupNotice(GroupNoticeMessage msg,boolean isRequest) throws SQLException {
         Connection con = DbUtil.getDb().getConn();
         PreparedStatement ps;
         ResultSet rs;
@@ -486,10 +487,11 @@ public class LoadSystem{
         }
 
         for(Map.Entry<String, Integer> level : groups.entrySet()){
-            ps = con.prepareStatement("select text,gid,time from chat_group.group_msg where gid = ? and isNotice = true and (level <= ? or (uid = ? and level = 1)) order by id ;");
+            ps = con.prepareStatement("select text,gid,time,uid from chat_group.group_msg where gid = ? and isNotice = true and (level <= ? or (uid = ? and level = 1)) and isRequest = ? order by id ;");
             ps.setObject(1,level.getKey());
             ps.setObject(2,level.getValue());
             ps.setObject(3,msg.getUid());
+            ps.setObject(4,isRequest);
             rs = ps.executeQuery();
             while (rs.next()){
                 String gid = rs.getString("gid");
@@ -498,6 +500,7 @@ public class LoadSystem{
                 notice.setNotice(rs.getString("text"));
                 notice.setGid(gid);
                 notice.setTime(rs.getString("time"));
+                notice.setSender_uid(rs.getString("uid"));
 
                 msg.addNotice(notice);
             }
@@ -540,5 +543,43 @@ public class LoadSystem{
         }
 
         msg.setGroupChat_texts(gcts);
+    }
+
+    public static List<String> loadAdm(RequestMessage msg) throws SQLException {
+        List<String> admUid = new ArrayList<>();
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = conn.prepareStatement("select uid from chat_group.group_user where gid = ? and (administrator = true or group_master = true);");
+        ps.setObject(1,msg.getGid());
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            String uid = rs.getString("uid");
+            admUid.add(uid);
+        }
+
+        return admUid;
+    }
+
+    public static String loadName(RequestMessage msg) throws SQLException {
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        String groupName = null;
+
+        ps = conn.prepareStatement("select name from members.user where uid = ?;");
+        ps.setObject(1,msg.getRequestPerson().getUid());
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()){
+            msg.getRequestPerson().setName(rs.getString("name"));
+        }
+
+        ps = conn.prepareStatement("select group_name from chat_group.`group` where gid = ?");
+        ps.setObject(1,msg.getGid());
+        rs = ps.executeQuery();
+        if(rs.next()){
+            groupName = rs.getString("group_name");
+        }
+
+        return groupName;
     }
 }

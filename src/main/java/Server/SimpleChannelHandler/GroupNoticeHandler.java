@@ -8,7 +8,7 @@ import message.GroupNoticeMessage;
 public class GroupNoticeHandler extends SimpleChannelInboundHandler<GroupNoticeMessage> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GroupNoticeMessage msg) throws Exception {
-        LoadSystem.loadGroupNotice(msg);
+        LoadSystem.loadGroupNotice(msg,msg.isRequestOrNo());
         ctx.writeAndFlush(msg);
     }
 }

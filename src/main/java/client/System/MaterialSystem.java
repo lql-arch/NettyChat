@@ -177,7 +177,7 @@ public class MaterialSystem {
         }
     }
 
-    public static void blacklist(LoadMessage load , ChannelHandlerContext ctx) throws InterruptedException {
+    public static void blacklist( ChannelHandlerContext ctx) throws InterruptedException {
         List<String> blacklist = new ArrayList<>();
         for(String friend_uid : load.getFriends()){
             if(load.getBlacklist().get(friend_uid)){

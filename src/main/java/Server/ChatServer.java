@@ -205,54 +205,7 @@ public class ChatServer {
                                 }
                             });
 
-                            ch.pipeline().addLast(new SimpleChannelInboundHandler<RequestMessage>() {
-                                @Override
-                                protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
-                                    if(!msg.isAddOrDelete()){//判断是添加还是删除
-                                        log.debug("delete:"+msg.getRequestPerson().getUid()+" "+msg.getRecipientPerson().getUid());
-                                        Delete.deleteFriend(msg);//删除好友信息
-                                        String str = msg.getRequestPerson().getName()+"将您移除了好友列表。";
-                                        StringMessage sm = new StringMessage(msg.getRequestPerson(),msg.getRecipientPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
-                                        Storage.storageRequestMessage(sm, true, true);//发送通知
-                                        RequestMessage rqm = new RequestMessage().setFriend(false).setNotice("移除成功");
-                                        ctx.channel().writeAndFlush(rqm);
-                                    }else {
-                                        if (msg.isClearMsg()) {
-                                            ReviseMaterial.reviseRequest(msg);
-                                        } else {
-                                            if (Verify.verifyIsFriend(msg)) {
-                                                ctx.channel().writeAndFlush(new RequestMessage().setFriend(true));
-                                            } else {
-                                                //向对象发送确认消息
-                                                if (!msg.isConfirm()) {
-                                                    if (!msg.isFriend()) {//拒绝
-                                                        String str = msg.getRecipientPerson().getName() + "拒绝了你的好友请求";
-                                                        StringMessage sm = new StringMessage(msg.getRecipientPerson(), msg.getRequestPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
-                                                        ReviseMaterial.reviseAddFriendMsg(msg);
-                                                        Storage.storageRequestMessage(sm, true, true);//addFriend 表示添加好友过程结束
-                                                        ctx.channel().writeAndFlush(new RequestMessage().setFriend(false));//阻塞用
-                                                    } else {//isFriend以false开始保存添加信息到数据库
-                                                        String str = msg.getRequestPerson().getName() + "发起了好友申请";
-                                                        StringMessage sm = new StringMessage(msg.getRequestPerson(), msg.getRecipientPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
-                                                        Storage.storageRequestMessage(sm, false, true);
-                                                    }
-                                                } else {//对方确认添加后添加消息到数据库
-                                                    String str = msg.getRecipientPerson().getName() + "同意了你的好友请求";
-                                                    StringMessage sm = new StringMessage(msg.getRecipientPerson(), msg.getRequestPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
-                                                    ReviseMaterial.reviseAddFriendMsg(msg);//修改状态为已读
-                                                    Storage.storageRequestMessage(sm, true, true);
-                                                    Storage.storageBuildFriends(msg);//建立联系
-
-                                                    sm.setMessage("我们已经是好友了！");
-                                                    Storage.storageSingleMessage(sm);
-                                                    RequestMessage rqm = new RequestMessage().setFriend(false).setNotice("添加成功");
-                                                    ctx.channel().writeAndFlush(rqm);//阻塞用
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            });
+                            ch.pipeline().addLast(new RequestHandler());
                             ch.pipeline().addLast(new FileMsgHandler(uidChannelMap,channelUidMap));
                             ch.pipeline().addLast(new FileReadHandler());
                             ch.pipeline().addLast(new FindHistoricalNews());
@@ -261,6 +214,7 @@ public class ChatServer {
                             ch.pipeline().addLast(new ReviseGroupMemberHandler());
                             ch.pipeline().addLast(new GroupNoticeHandler());
                             ch.pipeline().addLast(new GroupStringHandler());
+                            ch.pipeline().addLast(new ShowHandler());
 
                         }
                     }).bind(8100);
@@ -276,7 +230,6 @@ public class ChatServer {
             worker.shutdownGracefully();
         }
     }
-
     public static void addBlack(String uid,String friend_uid){
         blackMap.put(uid,friend_uid);
         blackMap.put(friend_uid,uid);

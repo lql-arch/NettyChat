@@ -9,7 +9,8 @@ import java.util.List;
 public class GroupNoticeMessage extends Message{
 
     private List<Notice> notices;
-    private String uid;
+    private String uid;//me
+    private boolean requestOrNo;
     public GroupNoticeMessage(){
         notices = new ArrayList<>();
     }
@@ -24,6 +25,7 @@ public class GroupNoticeMessage extends Message{
         private String notice;
         private String gid;
         private String time;
+        private String sender_uid;
      }
 
     @Override

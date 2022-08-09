@@ -139,7 +139,7 @@ public class ChatSystem {
     }
 
 
-    public static void unreadMessage(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException, IOException {
+    public static void unreadMessage(ChannelHandlerContext ctx) throws InterruptedException, IOException {
         while(true){
             ctx.writeAndFlush(new LoginStringMessage("flush!"+uid));
             semaphore.acquire();
@@ -147,10 +147,11 @@ public class ChatSystem {
             String Request = (load.getHasRequest() != 0 && load.getHasRequest() != 1) ? "new" : " " ;
             System.out.println("---------------------------------------------");
             System.out.println("--------        1.好友消息("+normal+")    \t---------");
-            System.out.println("--------        2.申请消息("+Request+")   \t---------");
-            System.out.println("--------        3.群消息         \t---------");
-            System.out.println("--------        4.文件信息       \t---------");
-            System.out.println("--------        5.返回           \t---------");
+            System.out.println("--------        2.好友申请消息("+Request+")   \t---------");
+            System.out.println("--------        3.群通知         \t---------");
+            System.out.println("--------        4.群消息         \t---------");
+            System.out.println("--------        5.文件信息       \t---------");
+            System.out.println("--------        6.返回           \t---------");
             System.out.println("---------------------------------------------");
             String choice = new Scanner(System.in).nextLine();
             switch (choice) {
@@ -158,21 +159,28 @@ public class ChatSystem {
                     unreadFriendMsg(ctx,load);
                     break;
                 case "2":
-                    unreadRequestMsg(ctx,load);
+                    unreadRequestMsg(ctx);
                     break;
                 case "3":
                     GroupSystem.GroupMsg(ctx);
                     break;
                 case "4":
-                    fileMsg(ctx,null,true);
+                    unreadGroupMsg(ctx);
                     break;
                 case "5":
+                    fileMsg(ctx,null,true);
+                    break;
+                case "6":
                     return;
                 default:
                     System.err.println("Error:无此选项,请重新输入.");
                     break;
             }
         }
+    }
+
+    public static void unreadGroupMsg(ChannelHandlerContext ctx){
+
     }
 
     public static void unreadFriendMsg(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException {
@@ -221,7 +229,7 @@ public class ChatSystem {
         }
     }
 
-    public static void unreadRequestMsg(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException {
+    public static void unreadRequestMsg(ChannelHandlerContext ctx) throws InterruptedException {
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+load.getUid()));
             semaphore.acquire();
@@ -253,6 +261,10 @@ public class ChatSystem {
                 if ((choice = new Scanner(System.in).nextLine()) != null) {
                     if(choice.compareToIgnoreCase("EXIT") == 0){
                         return;
+                    }
+                    if(!isDigit(choice)){
+                        System.err.println("输入错误");
+                        continue;
                     }
                     replyToMakeFriends(ctx,load,countCrMap.get(choice),uidNameMap);//同时将所有结束的好友申请标记为已读
                 }

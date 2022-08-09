@@ -5,8 +5,10 @@ import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.InputStream;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class Storage {
     private static final Logger log = LogManager.getLogger();
@@ -183,9 +185,49 @@ public class Storage {
         ps.setObject(1,msg.getGid());
         ps.setObject(2,msg.getName());
         ps.setObject(3,path);
-        ps.setObject(4,msg.getUid());
+        ps.setObject(4,msg.getMyUid());
         ps.setObject(5,Timestamp.valueOf(msg.getTime()));
         ps.execute();
     }
 
+    public static void storageRequestGroupNotice(RequestMessage msg,String str,int type) throws SQLException {
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = conn.prepareStatement("insert into chat_group.group_msg(uid, text, gid, time, isNotice, level,isRequest) values(?,?,?,?,?,?,true)");
+        ps.setObject(1,msg.getRequestPerson().getUid());
+        ps.setObject(2,str);
+        ps.setObject(3,msg.getGid());
+        ps.setObject(4,Timestamp.valueOf(LocalDateTime.now()));
+        ps.setObject(5,true);
+        ps.setObject(6,type);
+
+        ps.execute();
+    }
+
+    public static void storageAddGroupMember(RequestMessage msg) throws SQLException {
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        int members = 1;
+
+        ps = conn.prepareStatement("insert into chat_group.group_user(gid, uid, group_master, last_msg_id, administrator, banned) values (?,?,false,?,false,false);");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,msg.getRequestPerson().getUid());
+        ps.setObject(3,Timestamp.valueOf(LocalDateTime.now()));
+        ps.execute();
+
+        ps = conn.prepareStatement("select members_num from chat_group.`group` where gid = ?");
+        ps.setObject(1,msg.getGid());
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            members = rs.getInt("members_num");
+        }
+        members++;
+
+        ps = conn.prepareStatement("update chat_group.`group` set members_num = ? where gid = ?");
+        ps.setObject(1,members);
+        ps.setObject(2,msg.getGid());
+        ps.execute();
+
+    }
 }

@@ -179,8 +179,13 @@ public class FindSystem {
 
     }
 
-    public static void showGroup(ChannelHandlerContext ctx){
+    public static void showGroup(ChannelHandlerContext ctx) throws InterruptedException {
         FindGroupMessage fgm = FindGroupHandler.fgm;
+
+        if(fgm.getGroupName() == null && fgm.getBuildTime() == null){
+            System.out.println("查无此群");
+            return;
+        }
 
         boolean flag = true;
         System.out.println("---------------------------------------------");
@@ -198,7 +203,7 @@ public class FindSystem {
             String choice = new Scanner(System.in).nextLine();
             switch (choice){
                 case "1":
-
+                    RequestGroup(ctx,fgm);
                     break;
                 case "2":
                     return;
@@ -209,6 +214,18 @@ public class FindSystem {
             }
         }
 
+    }
+
+    public static void RequestGroup(ChannelHandlerContext ctx,FindGroupMessage fgm) throws InterruptedException {
+        RequestMessage rm = new RequestMessage();
+        rm.setGid(fgm.getGid())
+                .setGroupORSingle(true)
+                .setRequestPerson(new UserMessage(uid))
+                .setAddOrDelete(true)
+                .setClearMsg(false)
+                .setFriend(true);
+
+        ctx.channel().writeAndFlush(rm);
     }
 
 }

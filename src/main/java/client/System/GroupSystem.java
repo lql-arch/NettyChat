@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static client.Start.*;
+import static client.Start.uid;
 import static client.System.ChatSystem.friendMaterial;
 import static client.System.ChatSystem.isDigit;
 
@@ -35,16 +36,6 @@ public class GroupSystem {
         groupChat_text.setDate(time);
         groupChat_text.setMyName(name);
         groupChat_text.setGid(gid);
-
-
-//        List<GroupChat_text> t;
-//        if((t = groupChat_texts.get(gid)) != null){
-//            t.add(groupChat_text);
-//        }else{
-//            t = new ArrayList<>();
-//            t.add(groupChat_text);
-//            groupChat_texts.put(gid,t);
-//        }
 
         return groupChat_text;
     }
@@ -178,7 +169,6 @@ public class GroupSystem {
     public static void showChatGroup(ChannelHandlerContext ctx,LoadGroupMessage lgm) throws InterruptedException, IOException {
         while(true) {
             ctx.channel().writeAndFlush(lgm);
-            log.debug("wait");
             Start.semaphore.acquire();
             LoadGroupMessage msg = LoadGroupNewsHandler.groupMessage;
             lgm.setGroupMessages(msg.getGroupMessages());
@@ -244,7 +234,7 @@ public class GroupSystem {
         boolean flag = true;
         System.out.println("---------------------------------------------");
         System.out.println("\t\t\t1.群通知");
-        System.out.println("\t\t\t2.群未读消息");
+        System.out.println("\t\t\t2.群申请");
         System.out.println("\t\t\t3.返回");
         System.out.println("---------------------------------------------");
 
@@ -260,7 +250,7 @@ public class GroupSystem {
                     groupNotice(ctx);
                     break;
                 case 2:
-                    unreadGroupMsg();
+                    groupRequest(ctx);
                     break;
                 case 3:
                     return;
@@ -275,6 +265,7 @@ public class GroupSystem {
     public static void groupNotice(ChannelHandlerContext ctx) throws InterruptedException, IOException {
         GroupNoticeMessage gnm = new GroupNoticeMessage();
         gnm.setUid(uid);
+        gnm.setRequestOrNo(false);
         ctx.writeAndFlush(gnm);
         semaphore.acquire();
 
@@ -303,8 +294,59 @@ public class GroupSystem {
 
     }
 
-    public static void unreadGroupMsg(){
+    public static void groupRequest(ChannelHandlerContext ctx) throws InterruptedException {
+        while(true) {
+            GroupNoticeMessage gnm = new GroupNoticeMessage();
+            gnm.setUid(uid);
+            gnm.setRequestOrNo(true);
+            ctx.writeAndFlush(gnm);
+            semaphore.acquire();
 
+            gnm = GroupNoticeHandler.gnm;
+            int count = 1;
+            Map<Integer, GroupNoticeMessage.Notice> countMap = new HashMap<>();
+            Iterator<GroupNoticeMessage.Notice> notices = gnm.getNotices().listIterator();
+            System.out.println("---------------------------------------------");
+            while (notices.hasNext()) {
+                GroupNoticeMessage.Notice iter = notices.next();
+
+                countMap.put(count, iter);
+                System.out.println(Timestamp.valueOf(iter.getTime()));
+                System.out.println((count++) + "." + iter.getGid() + ":" + iter.getNotice());
+            }
+            System.out.println("---------------------------------------------");
+            System.out.println("输入“EXIT”退出");
+            String choice;
+            while(true){
+                if ((choice = new Scanner(System.in).nextLine()) != null) {
+                    if(choice.compareToIgnoreCase("EXIT") == 0){
+                        return;
+                    }
+                    if(!isDigit(choice)){
+                        System.err.println("输入错误");
+                        continue;
+                    }
+                    int result = Integer.parseInt(choice);
+                    if(result > 0 && result < count){
+                        GroupNoticeMessage.Notice notice = countMap.get(result);
+                        RequestMessage rm = new RequestMessage();
+                        rm.setGid(notice.getGid())
+                                .setGroupORSingle(true)
+                                .setRequestPerson(new UserMessage(notice.getSender_uid()))
+                                .setAddOrDelete(true)
+                                .setClearMsg(false)
+                                .setFriend(false)
+                                .setConfirm(true);
+
+                        ctx.channel().writeAndFlush(rm);
+
+                        break;
+                    }else{
+                        System.err.println("输入错误");
+                    }
+                }
+            }
+        }
     }
 
     public static void buildGroup(ChannelHandlerContext ctx) throws InterruptedException {
@@ -341,7 +383,6 @@ public class GroupSystem {
             if(!lgm.getUidBanned().get(uid)) {
                 while ((str = new Scanner(System.in).nextLine()).compareToIgnoreCase("exit") != 0) {
                     date = Timestamp.valueOf(LocalDateTime.now());
-//            System.out.println(lgm.getUidNameMap().get(lgm.getUid())+": "+str);
                     GroupChat_text text = addGroupChat_texts(lgm.getUid(), lgm.getGid(), date.toString(), lgm.getUidNameMap().get(lgm.getUid()), str);
                     ctx.writeAndFlush(new GroupStringMessage().setText(text));
                 }
@@ -429,31 +470,42 @@ public class GroupSystem {
         FileRead fileRead = new FileRead();
         ctx.writeAndFlush(fileRead.setUid(uid).setGid(msg.getGid()).setSingleOrGroup(false));
         semaphore.acquire();
+        ctx.channel().writeAndFlush(msg);
+        Start.semaphore.acquire();
+        msg = LoadGroupNewsHandler.groupMessage;
 
         fileRead = FileReadHandler.fileRead;
         Map<String, String> time = fileRead.getFileTimeMap();
         Map<Integer, String> countMap = new HashMap<>();
         int count = 1;
 
-        System.out.println("------------------------------------------------------------------------------------------");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
         System.out.println("\t\t\t输入\"exit\"返回");
-        System.out.println("------------------------------------------------------------------------------------------");
-        System.out.printf("%5s\t%20s\t%20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
+        System.out.printf("%5s %50s %20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
         if(fileRead.getFilePersonMap() == null || fileRead.getFileTimeMap() == null){
-            System.out.println("------------------------------------------------------------------------------------------");
+            System.out.println("------------------------------------------------------------------------------------------------------------");
             return;
         }
         for (Map.Entry<String, String> person : fileRead.getFilePersonMap().entrySet()) {
-            String name = uidNameMap.get(person.getValue());
+            String name = msg.getUidNameMap().get(person.getValue());
             countMap.put(count, person.getKey());
-            System.out.printf("%5d\t%20s\t%20s\t%20s\n", count++, person.getKey(), name, time.get(person.getKey()));
+            System.out.printf("%5d %50s %20s\t%20s\n", count++, person.getKey(), name, time.get(person.getKey()));
         }
-        System.out.println("------------------------------------------------------------------------------------------");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
+        if(msg.getGroup_master().compareTo(uid) == 0 || msg.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0)){
+            System.out.println("输入“delete”进入删除界面");
+            System.out.println("------------------------------------------------------------------------------------------------------------");
+        }
 
         while (true) {
             String choice = new Scanner(System.in).nextLine();
             if (choice.compareToIgnoreCase("exit") == 0) {
                 return;
+            }
+            if(choice.compareToIgnoreCase("delete") == 0){
+                deleteFile(ctx,time,fileRead,msg,count,countMap);
+                break;
             }
             if (!isDigit(choice)) {
                 System.err.println("输入错误");
@@ -473,7 +525,39 @@ public class GroupSystem {
                 fm.setPerson(false);
 
                 ctx.writeAndFlush(fm.setReadOrWrite(true));
+
+                semaphore.acquire();
+
                 break;
+            }
+        }
+    }
+
+    public static void deleteFile(ChannelHandlerContext ctx, Map<String, String> time, FileRead fileRead, LoadGroupMessage msg, int count, Map<Integer, String> countMap) throws InterruptedException {
+        System.out.println("请输入想要删除的文件序列:");
+        while(true) {
+            String choice = new Scanner(System.in).nextLine();
+            if (choice.compareToIgnoreCase("exit") == 0) {
+                return;
+            }
+            if (!isDigit(choice)) {
+                System.err.println("输入错误");
+                continue;
+            }
+            int result = Integer.parseInt(choice);
+            if (result < count && result > 0) {
+                FileMessage fm = new FileMessage();
+                String name = countMap.get(result);
+                fm.setName(name);
+                fm.setTime(time.get(name));
+                fm.setMyUid(uid);
+                fm.setUid(fileRead.getFilePersonMap().get(name));
+                fm.setGid(msg.getGid());
+                fm.setPerson(false);
+
+                ctx.writeAndFlush(fm.setDeleteFile(true));
+                semaphore.acquire();
+                return;
             }
         }
     }

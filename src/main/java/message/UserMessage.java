@@ -58,8 +58,9 @@ public class UserMessage extends Message{
         this.uid = uid;
     }
 
-    public void setName(String name) {
+    public UserMessage setName(String name) {
         this.name = name;
+        return this;
     }
 
     public void setData(String date) {//为json反序列化准备
