@@ -1,8 +1,8 @@
 package Server;
 
 import Server.SimpleChannelHandler.*;
-import config.DbUtil;
 import Server.processLogin.*;
+import config.DbUtil;
 import config.Decode;
 import config.Encode;
 import config.FrameDecoder;
@@ -11,27 +11,26 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class ChatServer {
     private static final Logger log = LogManager.getLogger(ChatServer.class);
-
     public static Map<String,Channel> uidChannelMap = new HashMap<>();
     public static Map<Channel,String> channelUidMap = new HashMap<>();
     private static Map<String,String> blackMap = new HashMap<>();
 
     private static Semaphore semaphore = new Semaphore(0);
 
-    public void server() {
+    public void server() throws SQLException {
         ServerBootstrap boot = new ServerBootstrap();
         EventLoopGroup boss = new NioEventLoopGroup(1);
         EventLoopGroup worker = new NioEventLoopGroup();
@@ -40,24 +39,14 @@ public class ChatServer {
             ChannelFuture future = boot.group(boss,worker)
                     .channel(NioServerSocketChannel.class)
                     .option(ChannelOption.SO_BACKLOG,128)
-                    .childOption(ChannelOption.SO_KEEPALIVE,true)
+                    .childOption(ChannelOption.SO_KEEPALIVE,true)// 9次
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
+                            ch.pipeline().addLast(new FrameDecoder());
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
-                            ch.pipeline().addFirst(new FrameDecoder());
-                            ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-                                    ReviseMaterial.reviseOnline(channelUidMap.get(ctx.channel()),false);
-                                    super.channelInactive(ctx);
-                                }
-
-                                @Override
-                                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                                    super.exceptionCaught(ctx, cause);
-                                }
-                            });
+                            ch.pipeline().addLast(new IdleStateHandler(30,0,0, TimeUnit.SECONDS));
+                            ch.pipeline().addLast("myHandler", new IdleHandler());
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginMessage>(){
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, LoginMessage msg) throws Exception {
@@ -125,6 +114,8 @@ public class ChatServer {
                                 {
                                     Channel channel = ctx.channel();
                                     String uid =  channelUidMap.get(channel);
+                                    //设置为离线状态
+                                    ReviseMaterial.reviseOnline(uid,false);
                                     //当有客户端断开连接的时候,就移除对应的通道
                                     channelUidMap.remove(channel,uid);
                                     uidChannelMap.remove(uid,channel);
@@ -251,7 +242,8 @@ public class ChatServer {
 
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
-        DbUtil.loginMysql().start();//.close();
+        DbUtil dbUtil = DbUtil.loginMysql().start();
         new ChatServer().server();
+        dbUtil.close();
     }
 }

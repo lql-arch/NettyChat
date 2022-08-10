@@ -100,7 +100,10 @@ public class LoginMessage extends Message {
             System.out.println("请输入uid:");
             uid = sc.nextLine();
             System.out.println("请输入密码:");
+//            EraserThread eraserThread = new EraserThread();
+//            eraserThread.start();
             pass = sc.nextLine();
+//            eraserThread.setActive(false);
             if (pass.length() > 25) {
                 System.err.println("密码字符长度不得超过25");
             }else{
@@ -160,5 +163,34 @@ public class LoginMessage extends Message {
     @Override
     public int getMessageType() {
         return LoginMessage;
+    }
+
+    static class EraserThread extends Thread {
+        private boolean active;
+        private String mask;
+
+        public EraserThread() {
+            this('*');
+        }
+
+        public EraserThread(char maskChar) {
+            active = true;
+            mask = "\010" + maskChar;
+        }
+
+        public void setActive(boolean active) {
+            this.active = active;
+        }
+
+        public boolean isActive() {
+            return active;
+        }
+
+        @Override
+        public void run() {
+            while (isActive()) {
+                System.out.print(mask);
+            }
+        }
     }
 }

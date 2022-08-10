@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     private static final Logger log = LogManager.getLogger();
-    private static final String file_dir = "/home/bronya/userFile";
+    public static String file_dir ;
 
     private static final EventLoopGroup worker = new NioEventLoopGroup();
 
@@ -154,12 +154,12 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             raf.seek(start);
             raf.write(bytes);
             start += read;
-//            log.debug("start = {}",start);
+
             time(start,msg.getFileLen());
             if(start >= msg.getFileLen()){
-//                log.debug("写入完毕");
                 Start.semaphore.release();
             }
+
 
         }catch (IOException e){
             e.printStackTrace();

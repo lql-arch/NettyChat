@@ -3,11 +3,8 @@ package client.System;
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
 import message.FindMessage;
-import message.LoadMessage;
 import message.ReviseMessage;
 import message.UserMessage;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
@@ -15,7 +12,6 @@ import static client.Start.load;
 import static client.System.ChatSystem.isDigit;
 
 public class MaterialSystem {
-    private  static final Logger log = LogManager.getLogger();
     public static void myMaterial(ChannelHandlerContext ctx) throws InterruptedException {
         while(true) {
             boolean flag = true;
@@ -118,8 +114,12 @@ public class MaterialSystem {
         while(true) {
             System.out.println("请输入新用户名");
             name = sc.nextLine();
-            if(name.length() > 25){
+            if(name.length() > 25 ){
                 System.err.println("字符长度不得超过25");
+                continue;
+            }
+            if(name.length() < 1){
+                System.err.println("字符长度不得少于1");
                 continue;
             }
             if(name.equals("帐号已注销")){

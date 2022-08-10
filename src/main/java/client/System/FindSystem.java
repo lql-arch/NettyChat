@@ -5,9 +5,10 @@ import client.SimpleChannelHandler.FindHistoricalNews;
 import client.Start;
 import client.normal.Chat_record;
 import io.netty.channel.ChannelHandlerContext;
-import message.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import message.FindGroupMessage;
+import message.HistoricalNews;
+import message.RequestMessage;
+import message.UserMessage;
 
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -18,7 +19,6 @@ import java.util.Scanner;
 import static client.Start.*;
 
 public class FindSystem {
-    private static final Logger log = LogManager.getLogger();
 
     public static void FindUid(ChannelHandlerContext ctx) throws IOException, InterruptedException {
         int read = 0;
@@ -198,17 +198,14 @@ public class FindSystem {
         System.out.println("\t1.申请加入群聊\t2.返回");
         System.out.println("---------------------------------------------");
 
-        while(flag) {
-            flag = false;
+        while(true) {
             String choice = new Scanner(System.in).nextLine();
             switch (choice){
                 case "1":
                     RequestGroup(ctx,fgm);
-                    break;
                 case "2":
                     return;
                 default:
-                    flag = true;
                     System.err.println("输入错误");
                     break;
             }
@@ -229,13 +226,3 @@ public class FindSystem {
     }
 
 }
-
-//        BufferedReader systemIn = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-//        String uid = null;
-//        try{
-//            if((uid = systemIn.readLine()) == null) {
-//                return;
-//            }
-//        } catch (Exception e) {
-//            System.err.println("main_menu exception end:"+e);
-//        }

@@ -4,6 +4,7 @@ import Server.ChatServer;
 import Server.processLogin.FileTransfer;
 import Server.processLogin.LoadSystem;
 import Server.processLogin.Storage;
+import config.ToMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -156,6 +157,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 msg.setStartPos(start);
 
                 channel.writeAndFlush(msg);
+                time(start,msg.getFileLen());
 
                 start += read;
                 lastLength = length > (file.length() - start) ? (int) (file.length() - start) : length;
@@ -173,4 +175,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
     }
 
+    private static void time(long start,long fileLength){
+        ToMessage cpb = new ToMessage(50, '#');
+        cpb.show((int) (start * 1.00/fileLength *100));
+    }
 }

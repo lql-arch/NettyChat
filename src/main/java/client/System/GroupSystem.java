@@ -1,12 +1,10 @@
 package client.System;
 
-import client.SimpleChannelHandler.FileReadHandler;
-import client.SimpleChannelHandler.FindHistoricalNews;
-import client.SimpleChannelHandler.GroupNoticeHandler;
-import client.SimpleChannelHandler.LoadGroupNewsHandler;
+import client.SimpleChannelHandler.*;
 import client.Start;
 import client.normal.Chat_group;
 import client.normal.GroupChat_text;
+import config.ToMessage;
 import io.netty.channel.ChannelHandlerContext;
 import message.*;
 import org.jetbrains.annotations.NotNull;
@@ -550,6 +548,33 @@ public class GroupSystem {
                 fm.setPerson(false);
 
                 ctx.writeAndFlush(fm.setReadOrWrite(true));
+                if(FileMsgHandler.file_dir == null){
+                    while(true) {
+                        System.out.println("请设置文件接收地址（绝对地址）：");
+                        FileMsgHandler.file_dir = new Scanner(System.in).nextLine();
+                        File folder = new File(FileMsgHandler.file_dir);
+                        if (!folder.exists() && !folder.isDirectory()) {
+                            System.out.println("地址不存在");
+                            continue;
+                        }
+                        break;
+                    }
+                }else{
+                    System.out.println("是否修改接收路径（yes/no）");
+                    String t = new Scanner(System.in).next();
+                    if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
+                        while(true) {
+                            System.out.println("请设置文件接收地址（绝对地址）：");
+                            FileMsgHandler.file_dir = new Scanner(System.in).nextLine();
+                            File folder = new File(FileMsgHandler.file_dir);
+                            if (!folder.exists() && !folder.isDirectory()) {
+                                System.out.println("地址不存在");
+                                continue;
+                            }
+                            break;
+                        }
+                    }
+                }
 
                 semaphore.acquire();
 
@@ -930,5 +955,10 @@ public class GroupSystem {
             second = one;
         }
         System.out.println("----------------------------------------");
+    }
+
+    private static void time(long start,long fileLength){
+        ToMessage cpb = new ToMessage(50, '#');
+        cpb.show((int) (start * 1.00/fileLength *100));
     }
 }

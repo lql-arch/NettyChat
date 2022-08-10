@@ -1,15 +1,15 @@
 package client.System;
 
 
+import client.SimpleChannelHandler.FileMsgHandler;
 import client.SimpleChannelHandler.FileReadHandler;
 import client.Start;
 import client.normal.Chat_group;
 import client.normal.Chat_record;
 import io.netty.channel.ChannelHandlerContext;
 import message.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -18,7 +18,6 @@ import static client.System.GroupSystem.getLoadGroupMessage;
 import static client.System.GroupSystem.showChatGroup;
 
 public class ChatSystem {
-    private static final Logger log = LogManager.getLogger();
     public synchronized static void friendSystem(ChannelHandlerContext ctx) throws InterruptedException, IOException {
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+Start.uid));
@@ -155,8 +154,8 @@ public class ChatSystem {
             System.out.println("---------------------------------------------");
             System.out.println("--------        1.好友消息("+normal+")      \t---------");
             System.out.println("--------        2.好友申请消息("+Request+")  \t---------");
-            System.out.println("--------        3.群通知("+groupRequest+")  \t---------");
-            System.out.println("--------        4.群消息("+groupNormal+")   \t---------");
+            System.out.println("--------        3.群通知("+groupRequest+")     \t---------");
+            System.out.println("--------        4.群消息("+groupNormal+")      \t---------");
             System.out.println("--------        5.文件信息       \t---------");
             System.out.println("--------        6.返回           \t---------");
             System.out.println("---------------------------------------------");
@@ -316,9 +315,10 @@ public class ChatSystem {
                         continue;
                     }
                     int result = Integer.parseInt(choice);
-                    if(result > 0 && result < count)
-                        replyToMakeFriends(ctx,load,countCrMap.get(choice),uidNameMap);//同时将所有结束的好友申请标记为已读
-                    else
+                    if(result > 0 && result < count) {
+                        replyToMakeFriends(ctx, load, countCrMap.get(choice), uidNameMap);//同时将所有结束的好友申请标记为已读
+                        break;
+                    }else
                         System.err.println("输入错误");
                 }
             }
@@ -332,12 +332,10 @@ public class ChatSystem {
         System.out.println("-------------------------------------");
         String t = new Scanner(System.in).nextLine();
         if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
-            log.debug("yes");
             RequestMessage rm = new RequestMessage().setRequestPerson(new UserMessage(cr.getSend_uid(),uidNameMap.get(cr.getSend_uid()))).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setConfirm(true).setFriend(true).setAddOrDelete(true);
             ctx.writeAndFlush(rm);
             semaphore.acquire();
         }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
-            log.debug("no");
             RequestMessage rm = new RequestMessage().setRequestPerson(new UserMessage(cr.getSend_uid(),uidNameMap.get(cr.getSend_uid()))).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setConfirm(false).setFriend(false).setAddOrDelete(true);
             ctx.channel().writeAndFlush(rm);
             semaphore.acquire();
@@ -398,6 +396,34 @@ public class ChatSystem {
                     fm.setUser(new UserMessage(uid));
                     fm.setStartPos(0);
                     fm.setPath(null);//标志物
+
+                    if(FileMsgHandler.file_dir == null){
+                        while(true) {
+                            System.out.println("请设置文件接收地址（绝对地址）：");
+                            FileMsgHandler.file_dir = new Scanner(System.in).nextLine();
+                            File folder = new File(FileMsgHandler.file_dir);
+                            if (!folder.exists() && !folder.isDirectory()) {
+                                System.out.println("地址不存在");
+                                continue;
+                            }
+                            break;
+                        }
+                    }else{
+                        System.out.println("是否修改接收路径（yes/no）");
+                        String t = new Scanner(System.in).next();
+                        if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
+                            while(true) {
+                                System.out.println("请设置文件接收地址（绝对地址）：");
+                                FileMsgHandler.file_dir = new Scanner(System.in).nextLine();
+                                File folder = new File(FileMsgHandler.file_dir);
+                                if (!folder.exists() && !folder.isDirectory()) {
+                                    System.out.println("地址不存在");
+                                    continue;
+                                }
+                                break;
+                            }
+                        }
+                    }
 
                     ctx.writeAndFlush(fm.setReadOrWrite(true));
                     break;

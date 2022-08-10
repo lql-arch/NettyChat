@@ -39,6 +39,7 @@ public abstract class Message implements Serializable {
     public static final int GroupNoticeMessage = 16;
     public static final int GroupStringMessage = 17;
     public static final int ShowMessage = 18;
+    public static final int IdleMessage = 19;
 
     public static final Map<Integer,Class<? extends Message>> map = new HashMap<>();
 
@@ -61,6 +62,7 @@ public abstract class Message implements Serializable {
         map.put(GroupNoticeMessage,GroupNoticeMessage.class);
         map.put(GroupStringMessage,GroupStringMessage.class);
         map.put(ShowMessage,ShowMessage.class);
+        map.put(IdleMessage,IdleMessage.class);
     }
 
 }

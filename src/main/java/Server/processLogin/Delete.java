@@ -1,10 +1,7 @@
 package Server.processLogin;
 
 import config.DbUtil;
-import message.FileMessage;
-import message.LoginMessage;
-import message.RequestMessage;
-import message.ReviseGroupMemberMessage;
+import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -224,16 +221,15 @@ public class Delete {
         Connection conn = DbUtil.getDb().getConn();
         PreparedStatement ps;
 
-        ps = conn.prepareStatement("delete from chat_group.group_user where uid = ? and group_master = false");
-        ps.setObject(1,msg.getUid());
-        ps.execute();
-
         //是群主就删除群
-        ps = conn.prepareStatement("select gid from chat_group.group_user where uid = ? and group_master = true");
+        ps = conn.prepareStatement("select gid,group_master from chat_group.group_user where uid = ?");
         ps.setObject(1,msg.getUid());
         ResultSet rs = ps.executeQuery();
         while(rs.next()){
-            DeleteGroup(new ReviseGroupMemberMessage().setGid(rs.getString("gid")));
+            if(rs.getBoolean("group_master"))
+                DeleteGroup(new ReviseGroupMemberMessage().setGid(rs.getString("gid")));
+            else
+                deleteGroupMember(new RequestMessage().setGid(rs.getString("gid")).setRequestPerson(new UserMessage(msg.getUid())));
         }
 
         ps = conn.prepareStatement("update members.user set isLogOut = true,name = '帐号已注销' where uid = ?");

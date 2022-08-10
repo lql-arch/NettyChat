@@ -10,16 +10,17 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import message.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Start {
-    public static final Logger log = LogManager.getLogger();
     private LoginMessage login;
     private static AtomicBoolean flag = new AtomicBoolean(false);
     public static int unread_message;
@@ -28,7 +29,6 @@ public class Start {
     public static LoadMessage groupLoad;
     public static volatile UserMessage friend;
     public static Semaphore semaphore = new Semaphore(0);
-//    public static CountDownLatch count = new CountDownLatch(1);
     public static AtomicBoolean EnterPassword = new AtomicBoolean(true);
     public static String uid ;// myUid
     public static List<StringMessage> message = new ArrayList<>();//登录后的未读消息
@@ -49,18 +49,8 @@ public class Start {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
                             ch.pipeline().addFirst(new FrameDecoder());
-//                            ch.pipeline().addLast(new ChannelDuplexHandler() {
-//                                // 用来触发特殊事件
-//                                @Override
-//                                public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception{
-//                                    IdleStateEvent event = (IdleStateEvent) evt;
-//                                    // 触发了写空闲事件
-//                                    if (event.state() == IdleState.WRITER_IDLE) {
-////                                log.debug("3s 没有写数据了，发送一个心跳包");
-//                                        ctx.writeAndFlush(new LoginStringMessage("活着没?"));
-//                                    }
-//                                }
-//                            });
+                            ch.pipeline().addLast(new IdleStateHandler(0,15,0, TimeUnit.SECONDS));
+                            ch.pipeline().addLast(new IdleHandler());
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginStringMessage>() {
                                 @Override
                                 public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -277,7 +267,7 @@ public class Start {
             System.out.println("\t---------    6.黑名单          \t---------\t");
             System.out.println("\t---------    7.退出登录        \t---------\t");
             System.out.println("\t---------    8.注销            \t---------\t");
-            System.out.println("\t---------    8.刷新            \t---------\t");
+            System.out.println("\t---------    9.刷新            \t---------\t");
             System.out.println("\t-----------------------------------------\t");
             String tmp = new Scanner(System.in).nextLine();
             switch (tmp) {

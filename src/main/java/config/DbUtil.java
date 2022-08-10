@@ -12,21 +12,13 @@ public class DbUtil {
     private final static Logger log = LogManager.getLogger(DbUtil.class);
     private static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
     private static final String DB_URL = "jdbc:mysql://localhost:3306/members?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-
     private static String USER;
-
     private static String PASS;
-
     private static Connection conn ;
-
-    private static final String NAME = "name";
-    private static final String AGE = "age";
-
     private  static DbUtil db ;
     private static boolean login = false;
 
-    private  DbUtil(){
-    };
+    private  DbUtil(){}
 
     public DbUtil(String user,String pass){
         USER = user;
@@ -51,14 +43,13 @@ public class DbUtil {
         return this;
     }
 
-    public DbUtil close() throws SQLException {
+    public void close() throws SQLException {
         try {
             conn.close();
             System.out.println("Goodbye!");
         }catch (SQLException ex){
             ex.printStackTrace();
         }
-        return this;
     }
 
     public static DbUtil loginMysql(){
