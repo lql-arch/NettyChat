@@ -25,7 +25,7 @@ import static client.System.ChatSystem.friendMaterial;
 import static client.System.ChatSystem.isDigit;
 
 public class GroupSystem {
-    public static AtomicBoolean groupChat = new AtomicBoolean(true);
+    public static AtomicBoolean groupChat = new AtomicBoolean(false);
     public static volatile Map<String,List<GroupChat_text>> groupChat_texts = new HashMap<>();
     public static Map<String,Boolean> groupIsRead = new HashMap<>();
 
@@ -41,7 +41,7 @@ public class GroupSystem {
     }
 
     @NotNull
-    private static LoadGroupMessage getLoadGroupMessage(Chat_group cg) {
+    public static LoadGroupMessage getLoadGroupMessage(Chat_group cg) {
         LoadGroupMessage lgm = new LoadGroupMessage();
 
         lgm.setGid(cg.getGid());
@@ -185,8 +185,10 @@ public class GroupSystem {
             System.out.print("\t1.进入群聊\t2.查看群历史记录\t3.群文件\n\t4.查看群成员\t5.返回\n");
             if (lgm.getGroup_master().compareTo(uid) == 0)
                 System.out.println("\t6.禁言群员\t7.解散群聊");
-            if (lgm.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0))
-                System.out.println("\t6.禁言群员\t");
+            else if (lgm.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0))
+                System.out.println("\t6.禁言群员\t8.退出该群");
+            else
+                System.out.println("\t8.退出该群");
             System.out.println("---------------------------------------------");
             while (flag) {
                 flag = false;
@@ -221,6 +223,20 @@ public class GroupSystem {
                             disbandTheGroupChat(ctx, lgm);
                             return;
                         }
+                    case 8:
+                        RequestMessage rm = new RequestMessage();
+                        rm.setGid(lgm.getGid())
+                                .setGroupORSingle(true)
+                                .setRequestPerson(new UserMessage(uid))
+                                .setAddOrDelete(false)
+                                .setClearMsg(false)
+                                .setFriend(false)
+                                .setConfirm(false);
+
+                        ctx.channel().writeAndFlush(rm);
+                        System.out.println("输入“Entry”继续");
+                        System.in.read();
+                        return;
                     default:
                         flag = true;
                         System.err.println("输入错误");
@@ -232,9 +248,13 @@ public class GroupSystem {
 
     public static void GroupMsg(ChannelHandlerContext ctx) throws InterruptedException, IOException {
         boolean flag = true;
+        ctx.writeAndFlush(new LoginStringMessage("group!"+uid));
+        semaphore.acquire();
+        String notice = groupLoad.getHasRequest() >= 4 ? "new" : " ";
+        String request = (groupLoad.getHasRequest() == 2 || groupLoad.getHasRequest() ==3 || groupLoad.getHasRequest() == 5 || groupLoad.getHasRequest() == 7) ? "new" : " ";
         System.out.println("---------------------------------------------");
-        System.out.println("\t\t\t1.群通知");
-        System.out.println("\t\t\t2.群申请");
+        System.out.println("\t\t\t1.群通知("+notice+")");
+        System.out.println("\t\t\t2.群申请("+request+")");
         System.out.println("\t\t\t3.返回");
         System.out.println("---------------------------------------------");
 
@@ -371,6 +391,7 @@ public class GroupSystem {
     public static void enterGroupChat(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
         ctx.channel().writeAndFlush(msg);
         Start.semaphore.acquire();
+
         LoadGroupMessage lgm = LoadGroupNewsHandler.groupMessage;
         String str;
         Timestamp date = Timestamp.valueOf(LocalDateTime.now());
@@ -378,7 +399,7 @@ public class GroupSystem {
             System.out.println("---------------------------------------------");
             System.out.println("\t\t\t" + msg.getGroupName() + "(输入EXIT退出)\t");
             System.out.println("---------------------------------------------");
-            showHistory(lgm, msg.getGid());
+            showHistory(ctx,lgm, msg.getGid());
             groupChat.compareAndSet(false, true);
             if(!lgm.getUidBanned().get(uid)) {
                 while ((str = new Scanner(System.in).nextLine()).compareToIgnoreCase("exit") != 0) {
@@ -399,7 +420,11 @@ public class GroupSystem {
         }
     }
 
-    public static void showHistory(LoadGroupMessage msg,String gid){
+    public static void showHistory(ChannelHandlerContext ctx,LoadGroupMessage msg,String gid) throws InterruptedException {
+        ctx.channel().writeAndFlush(msg);
+        Start.semaphore.acquire();
+
+        msg = LoadGroupNewsHandler.groupMessage;
         Timestamp one = null,second = null;
         if(groupIsRead.get(gid) == null){
             groupIsRead.put(gid,true);
@@ -410,7 +435,7 @@ public class GroupSystem {
 
             synchronized (GroupSystem.class) {
                 List<GroupChat_text> t;
-                if ((t = groupChat_texts.get(gid)) != null) {
+                if ((t = groupChat_texts.get(gid)) != null && !messages.isEmpty()) {
                     GroupChat_text gct = messages.get(messages.size() - 1);
                     for (GroupChat_text groupChat_text : t) {
                         if (Timestamp.valueOf(gct.getDate()).before(Timestamp.valueOf(groupChat_text.getDate()))) {

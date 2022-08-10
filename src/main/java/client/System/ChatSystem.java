@@ -3,6 +3,7 @@ package client.System;
 
 import client.SimpleChannelHandler.FileReadHandler;
 import client.Start;
+import client.normal.Chat_group;
 import client.normal.Chat_record;
 import io.netty.channel.ChannelHandlerContext;
 import message.*;
@@ -13,6 +14,8 @@ import java.io.IOException;
 import java.util.*;
 
 import static client.Start.*;
+import static client.System.GroupSystem.getLoadGroupMessage;
+import static client.System.GroupSystem.showChatGroup;
 
 public class ChatSystem {
     private static final Logger log = LogManager.getLogger();
@@ -77,17 +80,17 @@ public class ChatSystem {
     }
 
     public static void friendMaterial(String uid, ChannelHandlerContext ctx) throws InterruptedException, IOException {
-        String myUid = Start.uid;
-        ctx.channel().writeAndFlush(new UserMessage(myUid));
-        semaphore.acquire();
-        UserMessage me = Start.friend;
-
-        ctx.channel().writeAndFlush(new UserMessage(uid));
-        semaphore.acquire();
-        UserMessage friend = Start.friend;
-
-        String t = (Objects.equals(friend.getGander(), "n") ? "男" : (Objects.equals(friend.getGander(), "m") ? "女" : "未知"));
         while(true) {
+            String myUid = Start.uid;
+            ctx.channel().writeAndFlush(new UserMessage(myUid));
+            semaphore.acquire();
+            UserMessage me = Start.friend;
+
+            ctx.channel().writeAndFlush(new UserMessage(uid));
+            semaphore.acquire();
+            UserMessage friend = Start.friend;
+
+            String t = (Objects.equals(friend.getGander(), "n") ? "男" : (Objects.equals(friend.getGander(), "m") ? "女" : "未知"));
             boolean flag = false;
             System.out.println("----------------------------------------");
             System.out.println("uid:" + friend.getUid());
@@ -143,13 +146,17 @@ public class ChatSystem {
         while(true){
             ctx.writeAndFlush(new LoginStringMessage("flush!"+uid));
             semaphore.acquire();
+            ctx.writeAndFlush(new LoginStringMessage("group!"+uid));
+            semaphore.acquire();
             String normal = (load.getHasRequest() != 0 && load.getHasRequest() != 2) ? "new" : " " ;
             String Request = (load.getHasRequest() != 0 && load.getHasRequest() != 1) ? "new" : " " ;
+            String groupNormal = (groupLoad.getHasRequest() != 0 && groupLoad.getHasRequest() != 2 && groupLoad.getHasRequest() != 4 && groupLoad.getHasRequest() != 5) ? "new" : " " ;
+            String groupRequest = (groupLoad.getHasRequest() != 0 && groupLoad.getHasRequest() != 1 ) ? "new" : " " ;
             System.out.println("---------------------------------------------");
-            System.out.println("--------        1.好友消息("+normal+")    \t---------");
-            System.out.println("--------        2.好友申请消息("+Request+")   \t---------");
-            System.out.println("--------        3.群通知         \t---------");
-            System.out.println("--------        4.群消息         \t---------");
+            System.out.println("--------        1.好友消息("+normal+")      \t---------");
+            System.out.println("--------        2.好友申请消息("+Request+")  \t---------");
+            System.out.println("--------        3.群通知("+groupRequest+")  \t---------");
+            System.out.println("--------        4.群消息("+groupNormal+")   \t---------");
             System.out.println("--------        5.文件信息       \t---------");
             System.out.println("--------        6.返回           \t---------");
             System.out.println("---------------------------------------------");
@@ -179,11 +186,48 @@ public class ChatSystem {
         }
     }
 
-    public static void unreadGroupMsg(ChannelHandlerContext ctx){
+    public static void unreadGroupMsg(ChannelHandlerContext ctx) throws InterruptedException, IOException {
+        while(true) {
+            ctx.writeAndFlush(new LoginStringMessage("group!" + uid));
+            semaphore.acquire();
+            List<Chat_group> groups = groupLoad.getGroup();
 
+            int count = 1;
+            Map<Integer, Chat_group> countMap = new HashMap<>();
+
+            System.out.println("------------------------------------------");
+            for (Chat_group group : groups) {
+                if(group.getMessage() == 0)
+                    continue;
+                countMap.put(count, group);
+                System.out.printf("%5d.%20s(new)",count++,group.getGroupName());
+            }
+            System.out.println("------------------------------------------");
+            System.out.println("输入“EXIT”退出");
+            String choice;
+            while(true) {
+                if ((choice = new Scanner(System.in).nextLine()) != null) {
+                    if (choice.compareToIgnoreCase("EXIT") == 0) {
+                        return;
+                    }
+                    if(!isDigit(choice)) {
+                        System.err.println("输入错误");
+                        continue;
+                    }
+                    int result = Integer.parseInt(choice);
+                    if(result > 0 && result < count){
+                        LoadGroupMessage lgm = getLoadGroupMessage(countMap.get(result));
+                        showChatGroup(ctx, lgm);
+                        break;
+                    }else{
+                        System.err.println("无此选项");
+                    }
+                }
+            }
+        }
     }
 
-    public static void unreadFriendMsg(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException {
+    public static void unreadFriendMsg(ChannelHandlerContext ctx,LoadMessage load) throws InterruptedException, IOException {
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+Start.uid));
             semaphore.acquire();
@@ -207,7 +251,7 @@ public class ChatSystem {
             System.out.println("------------------------------------------");
             System.out.println("输入“EXIT”退出");
             String choice;
-            try {
+            while(true){
                 if ((choice = new Scanner(System.in).nextLine()) != null) {
                     if(choice.compareToIgnoreCase("EXIT") == 0){
                         return;
@@ -225,7 +269,7 @@ public class ChatSystem {
 
                     SendMessageSystem.sendFriend(ctx,me,friend);
                 }
-            }catch (Exception ignored){}
+            }
         }
     }
 
@@ -256,19 +300,28 @@ public class ChatSystem {
             }
             System.out.println("------------------------------------------");
             System.out.println("输入“EXIT”退出");
+            System.out.println("输入“clear”清除所有处理过的消息");
             String choice;
-            try {
+            while(true){
                 if ((choice = new Scanner(System.in).nextLine()) != null) {
                     if(choice.compareToIgnoreCase("EXIT") == 0){
                         return;
+                    }
+                    if(choice.compareToIgnoreCase("clear") == 0){
+                        ctx.writeAndFlush(new RequestMessage().setClearMsg(true).setGroupORSingle(false).setAddOrDelete(true).setRecipientPerson(new UserMessage(uid)));
+                        break;
                     }
                     if(!isDigit(choice)){
                         System.err.println("输入错误");
                         continue;
                     }
-                    replyToMakeFriends(ctx,load,countCrMap.get(choice),uidNameMap);//同时将所有结束的好友申请标记为已读
+                    int result = Integer.parseInt(choice);
+                    if(result > 0 && result < count)
+                        replyToMakeFriends(ctx,load,countCrMap.get(choice),uidNameMap);//同时将所有结束的好友申请标记为已读
+                    else
+                        System.err.println("输入错误");
                 }
-            }catch (Exception ignored){}
+            }
         }
     }
 

@@ -90,7 +90,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
         Delete.deleteGroupRequestMsg(msg);
 
         String str = msg.getRequestPerson().getName()+"已进入"+groupName;
-        Storage.storageRequestGroupNotice(msg,str,1);
+        Storage.storageRequestGroupNotice(msg,str,1,false);
 
         Storage.storageAddGroupMember(msg);
 
@@ -107,7 +107,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
         String groupName = LoadSystem.loadName(msg);
 
         String str = msg.getRequestPerson().getName()+"申请加入"+groupName;
-        Storage.storageRequestGroupNotice(msg,str,2);
+        Storage.storageRequestGroupNotice(msg,str,2,true);
         for (String s : adm_uid) {
             Channel channel = ChatServer.uidChannelMap.get(s);
             if(channel != null){
@@ -116,7 +116,16 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
         }
 
     }
-    private static void deleteGroupMsg(Channel channel, RequestMessage msg){
+    private static void deleteGroupMsg(Channel channel, RequestMessage msg) throws SQLException {
+        String groupName = LoadSystem.loadName(msg);
+
+        String str = msg.getRequestPerson().getName()+"已退出"+groupName;
+        Storage.storageRequestGroupNotice(msg,str,1,false);
+
+        Delete.deleteGroupMember(msg);
+
+        msg.setFriend(false);
+        channel.writeAndFlush(msg);
 
     }
 }

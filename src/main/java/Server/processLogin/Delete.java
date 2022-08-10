@@ -2,6 +2,7 @@ package Server.processLogin;
 
 import config.DbUtil;
 import message.FileMessage;
+import message.LoginMessage;
 import message.RequestMessage;
 import message.ReviseGroupMemberMessage;
 import org.apache.logging.log4j.LogManager;
@@ -188,6 +189,55 @@ public class Delete {
         ps = conn.prepareStatement("delete from chat_group.group_msg where gid = ? and uid = ? and isRequest = true and level = 2");
         ps.setObject(1,msg.getGid());
         ps.setObject(2,msg.getRequestPerson().getUid());
+        ps.execute();
+
+    }
+
+    public static void deleteGroupMember(RequestMessage msg) throws SQLException {
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+        int members;
+
+        ps = conn.prepareStatement("delete from chat_group.group_user where gid = ? and uid = ?");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,msg.getRequestPerson().getUid());
+        ps.execute();
+
+        ps = conn.prepareStatement("select members_num from chat_group.`group` where gid = ?");
+        ps.setObject(1,msg.getGid());
+        ResultSet rs = ps.executeQuery();
+        if(rs.next()){
+            members = rs.getInt("members_num");
+            members--;
+        }else{
+            members = 1;
+        }
+
+
+        ps = conn.prepareStatement("update chat_group.`group` set members_num = ? where gid = ?");
+        ps.setObject(1,members);
+        ps.setObject(2,msg.getGid());
+        ps.execute();
+    }
+
+    public static void LogOut(LoginMessage msg) throws SQLException {
+        Connection conn = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = conn.prepareStatement("delete from chat_group.group_user where uid = ? and group_master = false");
+        ps.setObject(1,msg.getUid());
+        ps.execute();
+
+        //是群主就删除群
+        ps = conn.prepareStatement("select gid from chat_group.group_user where uid = ? and group_master = true");
+        ps.setObject(1,msg.getUid());
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()){
+            DeleteGroup(new ReviseGroupMemberMessage().setGid(rs.getString("gid")));
+        }
+
+        ps = conn.prepareStatement("update members.user set isLogOut = true,name = '帐号已注销' where uid = ?");
+        ps.setObject(1,msg.getUid());
         ps.execute();
 
     }

@@ -13,7 +13,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
             if(!msg.isConfirm() && msg.isFriend()){
                 System.err.println("你已经进入该群了");
             }else{
-
+                System.out.println("你已退出该群");
             }
             return;
         }

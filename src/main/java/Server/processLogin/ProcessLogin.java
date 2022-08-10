@@ -16,7 +16,7 @@ public class ProcessLogin {
         }
         PreparedStatement ps1 = con.prepareStatement("use members");
         ps1.execute();
-        PreparedStatement ps2 = con.prepareStatement("select password FROM members.user where uid = ?");
+        PreparedStatement ps2 = con.prepareStatement("select password FROM members.user where uid = ? and isLogOut = false");
         ps2.setObject(1,uid);
         try(ResultSet rs = ps2.executeQuery()){
             while(rs.next()){

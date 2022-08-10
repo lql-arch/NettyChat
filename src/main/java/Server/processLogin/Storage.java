@@ -190,17 +190,18 @@ public class Storage {
         ps.execute();
     }
 
-    public static void storageRequestGroupNotice(RequestMessage msg,String str,int type) throws SQLException {
+    public static void storageRequestGroupNotice(RequestMessage msg,String str,int type,boolean request) throws SQLException {
         Connection conn = DbUtil.getDb().getConn();
         PreparedStatement ps;
 
-        ps = conn.prepareStatement("insert into chat_group.group_msg(uid, text, gid, time, isNotice, level,isRequest) values(?,?,?,?,?,?,true)");
+        ps = conn.prepareStatement("insert into chat_group.group_msg(uid, text, gid, time, isNotice, level,isRequest) values(?,?,?,?,?,?,?)");
         ps.setObject(1,msg.getRequestPerson().getUid());
         ps.setObject(2,str);
         ps.setObject(3,msg.getGid());
         ps.setObject(4,Timestamp.valueOf(LocalDateTime.now()));
         ps.setObject(5,true);
         ps.setObject(6,type);
+        ps.setObject(7,request);
 
         ps.execute();
     }

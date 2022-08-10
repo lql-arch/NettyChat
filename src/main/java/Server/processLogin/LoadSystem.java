@@ -131,7 +131,7 @@ public class LoadSystem{
         ps = conn.prepareStatement("use members");
         ps.execute();
 
-        ps = conn.prepareStatement("select name,age,build_time,gander,online from members.user where uid = ?");
+        ps = conn.prepareStatement("select name,age,build_time,gander,online from members.user where uid = ? and isLogOut = false");
         ps.setObject(1,uid);
         rs = ps.executeQuery();
         while(rs.next()){
@@ -307,6 +307,7 @@ public class LoadSystem{
 
         List<Chat_group> chat_groups = new ArrayList<>();
         int messages = 0;
+        int hasRequest = 0;
 
         ps = con.prepareStatement("select gid,last_msg_id from chat_group.group_user where uid = ?");
         ps.setObject(1,uid);
@@ -329,13 +330,30 @@ public class LoadSystem{
             }
 
             //获取群聊消息(unread限制没写)
-            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and time > ?  order by id");
+            ps = con.prepareStatement("SELECT DISTINCT uid,text,time from chat_group.group_msg where gid = ? and time > ? and isNotice = false order by id");
             ps.setObject(1,gid);
             ps.setObject(2,lastTime);
             rs1 = ps.executeQuery();
             if(rs1.next()) {//先读取时，读取是否有消息，进入群聊后在详细读取
                 messages++;
                 group.setMessage(1);//有消息
+                hasRequest = 1;
+            }
+
+
+            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and isNotice = true and isRequest = false order by id");
+            ps.setObject(1,gid);
+            rs1 = ps.executeQuery();
+            if(rs1.next()) {//通知
+                hasRequest = hasRequest == 1 ? 6 : 4 ;
+            }
+
+            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and isNotice = true and isRequest = true order by id");
+            ps.setObject(1,gid);
+            rs1 = ps.executeQuery();
+            if(rs1.next()) {//申请
+                messages++;
+                hasRequest = hasRequest == 1 ? 3 : (hasRequest == 6 ? 7 : 5);
             }
 
             ps = con.prepareStatement("select administrator,group_master,uid from chat_group.group_user where gid = ?");
@@ -355,6 +373,7 @@ public class LoadSystem{
             chat_groups.add(group);
         }
 
+        loadMessage.setHasRequest(hasRequest);
         loadMessage.setGroupMessage(messages);
         loadMessage.setGroup(chat_groups);
 
@@ -371,16 +390,35 @@ public class LoadSystem{
         Map<String, String> uidNameMap = new HashMap<>();
         Map<String,Boolean> uidBanned = new HashMap<>();
         Timestamp timestamp = Timestamp.valueOf(msg.getLastTime());
+        List<String> adm = new ArrayList<>();
+        List<String> members = new ArrayList<>();
+
 
         ps = con.prepareStatement("select name from members.user where uid = ?;");//群主
-        ps.setObject(1,msg.getUid());
+        ps.setObject(1,msg.getGroup_master());
         rs = ps.executeQuery();
         if(rs.next()){
             msg.setMasterName(rs.getString("name"));
             uidNameMap.put(msg.getUid(),rs.getString("name"));
         }
 
-        for (String t : msg.getAdministrator()) {
+        ps = con.prepareStatement("select uid from chat_group.group_user where gid = ? and administrator = true");
+        ps.setObject(1,msg.getGid());
+        rs = ps.executeQuery();
+        while(rs.next()){
+            adm.add(rs.getString("uid"));
+        }
+        msg.setAdministrator(adm);
+
+        ps = con.prepareStatement("select uid from chat_group.group_user where gid = ? and administrator = false and group_master = false");
+        ps.setObject(1,msg.getGid());
+        rs = ps.executeQuery();
+        while(rs.next()){
+            members.add(rs.getString("uid"));
+        }
+        msg.setMembers(members);
+
+        for (String t : adm) {
             ps = con.prepareStatement("select name from members.user where uid = ?;");
             ps.setObject(1, t);
             rs = ps.executeQuery();
@@ -389,9 +427,10 @@ public class LoadSystem{
             }
         }
 
-        for (String t : msg.getMembers()) {
+        for (String t : members) {
             ps = con.prepareStatement("select name from members.user where uid = ?;");
             ps.setObject(1, t);
+            rs = ps.executeQuery();
             if(rs.next()){
                 uidNameMap.put(t,rs.getString("name"));
             }

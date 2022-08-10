@@ -1,5 +1,8 @@
 package message;
 
+import client.Start;
+import io.netty.channel.ChannelHandlerContext;
+
 import java.sql.Date;
 import java.sql.SQLException;
 import java.util.Scanner;
@@ -12,9 +15,11 @@ public class LoginMessage extends Message {
     private String gander;
     private String build_time;//Date
 
+    private boolean logOut;
     private boolean Login;
+    public LoginMessage(){}
 
-    private LoginMessage(String uid, String pass,boolean isLogin) {
+    private LoginMessage(String uid, String pass, boolean isLogin) {
         this.uid = uid;
         this.pass = pass;
         this.Login = isLogin;
@@ -25,20 +30,32 @@ public class LoginMessage extends Message {
         this.Login = false;
     }
 
-    public void setPass(String pass) {
-        this.pass = pass;
+    public boolean isLogOut() {
+        return logOut;
     }
 
-    public void setBuild_time(String build_time) {
+    public LoginMessage setLogOut(boolean logOut) {
+        this.logOut = logOut;
+        return this;
+    }
+
+    public LoginMessage setPass(String pass) {
+        this.pass = pass;
+        return this;
+    }
+
+    public LoginMessage setBuild_time(String build_time) {
         this.build_time = build_time;
+        return this;
     }
 
     public boolean isLogin() {
         return Login;
     }
 
-    public void setLogin(boolean login) {
+    public LoginMessage setLogin(boolean login) {
         Login = login;
+        return this;
     }
 
     public String getUid() {
@@ -61,24 +78,35 @@ public class LoginMessage extends Message {
         return Date.valueOf(build_time);
     }
 
-    public void setGander(String gander) {
+    public LoginMessage setGander(String gander) {
         this.gander = gander;
+        return this;
     }
 
-    public void setTime(Date build_time) {
+    public LoginMessage setTime(Date build_time) {
         this.build_time = build_time.toString();
+        return this;
     }
 
-    public void setUid(String uid) {
+    public LoginMessage setUid(String uid) {
         this.uid = uid;
+        return this;
     }
 
     public static LoginMessage LoginUser(){
-        Scanner sc = new Scanner(System.in);
-        System.out.println("请输入uid:");
-        String uid = sc.nextLine();
-        System.out.println("请输入密码:");
-        String pass = sc.nextLine();
+        String uid,pass;
+        while(true) {
+            Scanner sc = new Scanner(System.in);
+            System.out.println("请输入uid:");
+            uid = sc.nextLine();
+            System.out.println("请输入密码:");
+            pass = sc.nextLine();
+            if (pass.length() > 25) {
+                System.err.println("密码字符长度不得超过25");
+            }else{
+                break;
+            }
+        }
 
         return new LoginMessage(uid,pass,true);
     }
@@ -90,12 +118,14 @@ public class LoginMessage extends Message {
     public static LoginMessage register() throws SQLException {
 
         Scanner sc = new Scanner(System.in);
-        //System.out.println("请输入uid：");
-        //String uid = sc.nextLine();
         System.out.println("请输入密码：(输入’exit‘退出)");
         String password ;
         while(true) {
             password = sc.nextLine();
+            if(password.length() > 25){
+                System.err.println("密码字符长度不得超过25");
+                continue;
+            }
             if(password.compareTo("exit") == 0){
                 System.out.println("注册已取消");
                 break;
@@ -110,6 +140,17 @@ public class LoginMessage extends Message {
 
 
         return new LoginMessage(password);
+    }
+
+    public static boolean logOut(ChannelHandlerContext ctx) throws InterruptedException {
+        System.out.println("你确认要注销吗？(yes/no)");
+        String result = new Scanner(System.in).nextLine();
+        if(result.compareToIgnoreCase("yes") == 0 || result.compareToIgnoreCase("y") == 0){
+            ctx.channel().writeAndFlush(new LoginMessage().setUid(Start.uid).setLogOut(true));
+            Start.semaphore.acquire();
+            return true;
+        }
+        return false;
     }
 
     public String toString(){

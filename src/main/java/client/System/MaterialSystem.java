@@ -74,6 +74,10 @@ public class MaterialSystem {
         while(true) {
             System.out.println("请输入旧密码");
             String oldPassword = sc.nextLine();
+            if(oldPassword.length() > 25){
+                System.out.println("输入错误");
+                continue;
+            }
             ctx.channel().writeAndFlush(new FindMessage(uid, oldPassword));
 //            Start.count.await();
             Start.semaphore.acquire();
@@ -86,6 +90,10 @@ public class MaterialSystem {
         while(true) {
             System.out.println("请输入新密码");
             newPassword = sc.nextLine();
+            if(newPassword.length() > 25){
+                System.err.println("密码字符长度不得超过25");
+                continue;
+            }
             System.out.println("请再次输入密码");
             if (sc.nextLine().compareTo(newPassword) != 0) {
                 System.err.println("两次密码不一致");
@@ -110,6 +118,14 @@ public class MaterialSystem {
         while(true) {
             System.out.println("请输入新用户名");
             name = sc.nextLine();
+            if(name.length() > 25){
+                System.err.println("字符长度不得超过25");
+                continue;
+            }
+            if(name.equals("帐号已注销")){
+                System.err.println("帐号名称不规范");
+                continue;
+            }
             System.out.println("是否更改(yes/no)");
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){

@@ -35,11 +35,11 @@ public class FindSystem {
     public static void findPerson(ChannelHandlerContext ctx, String uid) throws InterruptedException, IOException {
         String myUid = Start.uid;
         ctx.channel().writeAndFlush(new UserMessage(myUid));
-        Start.semaphore.acquire(1);
+        Start.semaphore.acquire();
         UserMessage me = Start.friend;
 
         ctx.channel().writeAndFlush(new UserMessage(uid));
-        Start.semaphore.acquire(1);
+        Start.semaphore.acquire();
         UserMessage user = Start.friend;
         if(user.getUid().equals(me.getUid()) || user.getBuild_time() == null){
             System.out.println("查无此人");

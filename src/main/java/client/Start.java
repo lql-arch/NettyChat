@@ -200,6 +200,7 @@ public class Start {
                             ch.pipeline().addLast(new GroupNoticeHandler());
                             ch.pipeline().addLast(new GroupStringHandler());
                             ch.pipeline().addLast(new ShowHandler());
+                            ch.pipeline().addLast(new LoginHandler());
 
                         }
                     }).connect("192.168.30.100", 8100);
@@ -259,21 +260,25 @@ public class Start {
     private void main_menu(ChannelHandlerContext ctx) throws Exception {
         ctx.channel().writeAndFlush(new LoginStringMessage("singleLoad!"+uid));
         semaphore.acquire();
+        ctx.writeAndFlush(new LoginStringMessage("group!"+uid));
+        semaphore.acquire();
         while(true) {
-                ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+uid));
-                semaphore.acquire();
-                System.out.println("\t-----------------------------------------\t");
-                System.out.println("\t              欢迎登录，"+load.getName());
-                System.out.println("\t-----------------------------------------\t");
-                System.out.println("\t---------    1.好友            \t---------\t");
-                System.out.println("\t---------    2.群聊            \t---------\t");
-                System.out.println("\t---------    3.查询用户（uid） \t---------\t");
-                System.out.println("\t---------    4.未读消息(" + unread_message + ")     \t---------\t");
-                System.out.println("\t---------    5.我的资料        \t---------\t");
-                System.out.println("\t---------    6.黑名单          \t---------\t");
-                System.out.println("\t---------    7.退出登录        \t---------\t");
-                System.out.println("\t---------    8.刷新            \t---------\t");
-                System.out.println("\t-----------------------------------------\t");
+            ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+uid));
+            semaphore.acquire();
+            int unMessage = unread_message+groupLoad.getGroupMessage();
+            System.out.println("\t-----------------------------------------\t");
+            System.out.println("\t              欢迎登录，"+load.getName());
+            System.out.println("\t-----------------------------------------\t");
+            System.out.println("\t---------    1.好友            \t---------\t");
+            System.out.println("\t---------    2.群聊            \t---------\t");
+            System.out.println("\t---------    3.查询用户（uid） \t---------\t");
+            System.out.println("\t---------    4.未读消息(" +unMessage+ ")     \t---------\t");
+            System.out.println("\t---------    5.我的资料        \t---------\t");
+            System.out.println("\t---------    6.黑名单          \t---------\t");
+            System.out.println("\t---------    7.退出登录        \t---------\t");
+            System.out.println("\t---------    8.注销            \t---------\t");
+            System.out.println("\t---------    8.刷新            \t---------\t");
+            System.out.println("\t-----------------------------------------\t");
             String tmp = new Scanner(System.in).nextLine();
             switch (tmp) {
                 case "1":
@@ -298,6 +303,12 @@ public class Start {
                     ctx.channel().close();
                     return;
                 case "8":
+                    if(LoginMessage.logOut(ctx)) {
+                        ctx.channel().close();
+                        return;
+                    }
+                    break;
+                case "9":
                     break;
                 default:
                     System.err.println("输入错误，请重新尝试");

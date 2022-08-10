@@ -47,16 +47,25 @@ public class ChatServer {
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
                             ch.pipeline().addFirst(new FrameDecoder());
                             ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-
                                 @Override
                                 public void channelInactive(ChannelHandlerContext ctx) throws Exception {
                                     ReviseMaterial.reviseOnline(channelUidMap.get(ctx.channel()),false);
                                     super.channelInactive(ctx);
                                 }
+
+                                @Override
+                                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                                    super.exceptionCaught(ctx, cause);
+                                }
                             });
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginMessage>(){
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext ctx, LoginMessage msg) throws Exception {
+                                    if(msg.isLogOut()){
+                                        Delete.LogOut(msg);
+                                        uidChannelMap.get(msg.getUid()).writeAndFlush(msg);
+                                        return;
+                                    }
                                     if(!ProcessLogin.login(msg)){
                                         ctx.channel().writeAndFlush(new LoginStringMessage("password error!"));
                                     }else {
