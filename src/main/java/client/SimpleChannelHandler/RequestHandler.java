@@ -20,7 +20,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
             System.err.println("你与目标已经是好友了！");
         }else{
             System.out.println(msg.getNotice());
-//            DeleteSystem.semaphoreFriend.release();
+            DeleteSystem.semaphoreFriend.release();
         }
     }
 }

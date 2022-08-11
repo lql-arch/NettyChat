@@ -341,7 +341,6 @@ public class ChatSystem {
         }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
             RequestMessage rm = new RequestMessage().setRequestPerson(new UserMessage(cr.getSend_uid(),name)).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setConfirm(false).setFriend(false).setAddOrDelete(true);
             ctx.channel().writeAndFlush(rm);
-//            DeleteSystem.semaphoreFriend.acquire();
         }else{
             return;
         }

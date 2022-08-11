@@ -61,7 +61,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
                             StringMessage sm = new StringMessage(msg.getRecipientPerson(), msg.getRequestPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
                             ReviseMaterial.reviseAddFriendMsg(msg);
                             Storage.storageRequestMessage(sm, true, true);//addFriend 表示添加好友过程结束
-                            channel.writeAndFlush(new RequestMessage().setFriend(false).setNotice(str));//阻塞用
+//                            channel.writeAndFlush(new RequestMessage().setFriend(false).setNotice(str));
                         } else {//isFriend以false开始保存添加信息到数据库
                             String str = msg.getRequestPerson().getName() + "发起了好友申请";
                             StringMessage sm = new StringMessage(msg.getRequestPerson(), msg.getRecipientPerson(), str, Timestamp.valueOf(LocalDateTime.now()).toString());
