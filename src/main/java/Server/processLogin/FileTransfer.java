@@ -44,7 +44,7 @@ public class FileTransfer {
 
     public static void transferFile(ChannelHandlerContext ctx, FileMessage msg)  {
         File file = new File(msg.getPath());
-        if(file.exists()){
+        if(!file.exists()){
             log.warn("文件已消失");
             msg.setPath(null);
             msg.setName(null);
