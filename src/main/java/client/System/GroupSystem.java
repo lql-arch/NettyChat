@@ -547,7 +547,6 @@ public class GroupSystem {
                 fm.setPath(null);//标志物
                 fm.setPerson(false);
 
-                ctx.writeAndFlush(fm.setReadOrWrite(true));
                 if(FileMsgHandler.file_dir == null){
                     while(true) {
                         System.out.println("请设置文件接收地址（绝对地址）：");
@@ -575,6 +574,7 @@ public class GroupSystem {
                         }
                     }
                 }
+                ctx.writeAndFlush(fm.setReadOrWrite(true));
 
                 semaphore.acquire();
 

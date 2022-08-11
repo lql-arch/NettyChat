@@ -1,5 +1,6 @@
 package client.SimpleChannelHandler;
 
+import client.Start;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -21,7 +22,7 @@ public class IdleHandler extends SimpleChannelInboundHandler<IdleMessage> {
             IdleStateEvent event = (IdleStateEvent) evt;
             // 触发了写空闲事件
             if (event.state().equals(IdleState.WRITER_IDLE)) {
-                ctx.channel().writeAndFlush(new IdleMessage().setStr("活着没?"));
+                ctx.channel().writeAndFlush(new IdleMessage().setStr(Start.uid+"!存活"));
             }
         }
         super.userEventTriggered(ctx, evt);

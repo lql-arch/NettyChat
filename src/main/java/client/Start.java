@@ -208,7 +208,6 @@ public class Start {
 
     private  void extracted(ChannelHandlerContext ctx) throws Exception {
         boolean error = true;
-
         while(error) {
             error = false;
             String tmp;

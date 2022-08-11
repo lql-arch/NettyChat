@@ -69,14 +69,16 @@ public class MaterialSystem {
         Scanner sc = new Scanner(System.in);
         String newPassword;
         while(true) {
-            System.out.println("请输入旧密码");
+            System.out.println("请输入旧密码(输入‘exit’退出)");
             String oldPassword = sc.nextLine();
+            if(oldPassword.compareToIgnoreCase("exit") == 0){
+                return;
+            }
             if(oldPassword.length() > 25){
                 System.out.println("输入错误");
                 continue;
             }
             ctx.channel().writeAndFlush(new FindMessage(uid, oldPassword));
-//            Start.count.await();
             Start.semaphore.acquire();
             if (Start.EnterPassword.get()){
                 break;
@@ -85,13 +87,19 @@ public class MaterialSystem {
             }
         }
         while(true) {
-            System.out.println("请输入新密码");
+            System.out.println("请输入新密码(输入‘exit’退出)");
             newPassword = sc.nextLine();
+            if(newPassword.compareToIgnoreCase("exit") == 0){
+                return;
+            }
             if(newPassword.length() > 25){
                 System.err.println("密码字符长度不得超过25");
                 continue;
             }
-            System.out.println("请再次输入密码");
+            System.out.println("请再次输入密码(输入‘exit’退出)");
+            if(newPassword.compareToIgnoreCase("exit") == 0){
+                return;
+            }
             if (sc.nextLine().compareTo(newPassword) != 0) {
                 System.err.println("两次密码不一致");
                 continue;
@@ -103,7 +111,8 @@ public class MaterialSystem {
                 Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
-                break;
+                System.out.println("已取消");
+                return;
             }
         }
     }
@@ -112,8 +121,11 @@ public class MaterialSystem {
         Scanner sc = new Scanner(System.in);
         String name;
         while(true) {
-            System.out.println("请输入新用户名");
+            System.out.println("请输入新用户名(输入‘exit’退出)");
             name = sc.nextLine();
+            if(name.compareToIgnoreCase("exit") == 0){
+                return;
+            }
             if(name.length() > 25 ){
                 System.err.println("字符长度不得超过25");
                 continue;
@@ -130,7 +142,6 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,name,null,null));
-//                Start.count.await();
                 Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
@@ -156,11 +167,10 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,null,null,gander));
-//                Start.count.await();
                 Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
-                break;
+                return;
             }
         }
     }
@@ -169,14 +179,17 @@ public class MaterialSystem {
         Scanner sc = new Scanner(System.in);
         int age;
         while(true) {
-            System.out.println("请输入年龄");
+            System.out.println("请输入年龄(输入‘exit’退出)");
             String ageStr = sc.nextLine();
+            if(ageStr.compareToIgnoreCase("exit") == 0){
+                return;
+            }
             if(!isDigit(ageStr)){
                 System.err.println("包含错误字符，请重新输入.");
                 continue;
             }
             age = Integer.parseInt(ageStr);
-            if(age >= 150){
+            if(age >= 150 || age < 0){
                 System.err.println("？？？");
                 continue;
             }
@@ -184,7 +197,6 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,age));
-//                Start.count.await();
                 Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){

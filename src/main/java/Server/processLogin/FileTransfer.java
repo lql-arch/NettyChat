@@ -44,6 +44,12 @@ public class FileTransfer {
 
     public static void transferFile(ChannelHandlerContext ctx, FileMessage msg)  {
         File file = new File(msg.getPath());
+        if(file.exists()){
+            log.warn("文件已消失");
+            msg.setPath(null);
+            msg.setName(null);
+            ctx.writeAndFlush(msg);
+        }
         try(RandomAccessFile raf = new RandomAccessFile(file,"r")){
             raf.seek(msg.getStartPos());
             int read;

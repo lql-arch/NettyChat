@@ -91,6 +91,18 @@
 <!--      <version>0.6.9</version>-->
 <!--    </dependency>-->
 
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>javax.mail</artifactId>
+      <version>1.6.2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.appengine</groupId>
+      <artifactId>appengine-api-1.0-sdk</artifactId>
+      <version>2.0.5</version> <!-- or later-->
+    </dependency>
+
   </dependencies>
 
   <build>

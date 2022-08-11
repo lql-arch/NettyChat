@@ -137,7 +137,6 @@ public class ChatServer {
                                 protected void channelRead0(ChannelHandlerContext ctx, UserMessage msg) throws Exception {
                                     String uid = msg.getUid();
                                     UserMessage um = LoadSystem.friendMaterial(uid);
-//                                    log.debug("uid:"+uid+" "+um.getBuild_time());
                                     ctx.writeAndFlush(um);
                                 }
                             });

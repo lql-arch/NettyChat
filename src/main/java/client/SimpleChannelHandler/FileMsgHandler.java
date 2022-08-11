@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
+    private static final Logger log = LogManager.getLogger();
     public static String file_dir ;
     public static Semaphore fileSemaphore = new Semaphore(0);
 
@@ -55,6 +56,13 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     }
 
     public static void receiveFiles(ChannelHandlerContext ctx, FileMessage msg){
+        if(msg.getName() == null && msg.getPath() == null){
+            System.err.println("文件不存在");
+            fileSemaphore.release();
+            return;
+        }
+
+
         int readLen = msg.getEndPos();
         long start = msg.getStartPos();
         String path = file_dir + File.separator + msg.getName();
@@ -142,8 +150,9 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     }
 
     public static void receiveGroupFiles(ChannelHandlerContext ctx, FileMessage msg){
-        if(msg.getName().compareTo(msg.getPath()) != 0 && msg.getStartPos() == 0){
+        if(msg.getPath() == null || msg.getName() == null){
             System.err.println("查无此文件");
+            Start.semaphore.release();
             return;
         }
 
@@ -163,7 +172,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             if(start >= msg.getFileLen()){
                 Start.semaphore.release();
             }
-
 
         }catch (IOException e){
             e.printStackTrace();

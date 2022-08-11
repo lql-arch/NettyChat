@@ -241,9 +241,9 @@ public class LoadSystem{
             ps.setObject(2,msg.getUid());
             ps.setObject(3,Timestamp.valueOf(msg.getTime()));
             ResultSet rs = ps.executeQuery();
-            if (rs.next()){
+            if(rs.next()){
                 path = rs.getString("file_path");
-                msg.setPath(path);
+                msg.setPath(msg.getName());
             }else{
                 path = null;
                 msg.setPath(null);

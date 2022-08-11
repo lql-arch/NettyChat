@@ -5,9 +5,7 @@ import Server.processLogin.FileTransfer;
 import Server.processLogin.LoadSystem;
 import Server.processLogin.Storage;
 import config.ToMessage;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import message.FileMessage;
 import message.StringMessage;
 import org.apache.logging.log4j.LogManager;
@@ -124,7 +122,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             raf.seek(start);
             raf.write(bytes);
             start += readLen ;
-//            log.debug("start = {}",start);
 
             if(start == msg.getFileLen()){
                 log.debug("写入完毕");
@@ -136,16 +133,26 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     }
 
     public static void sendForClient(ChannelHandlerContext ctx, FileMessage msg,String path){
+        if(msg.getPath() == null || path == null){
+            log.error("查无此文件");
+            msg.setName(null);
+            ctx.channel().writeAndFlush(msg);
+            return;
+        }
+
         long start = msg.getStartPos();
         Channel channel = ChatServer.uidChannelMap.get(msg.getMyUid());
 
         File file = new File(path);
         if(!file.exists()){
+            log.error("文件已消失");
+            msg.setName(null);
+            msg.setPath(null);
             channel.writeAndFlush(msg);
             return;
         }
         msg.setFileLen(file.length());
-        int length = (int)(file.length()/10 < 1024 * 1024 * 4 ? file.length()/10 : 1024 * 1024 * 4);
+        int length = (int)(file.length()/10 < 1024 * 1024 * 4 ? file.length() / 10 : 1024 * 1024 * 4);
         byte[] bytes = new byte[length];
         int lastLength;
 
@@ -156,7 +163,22 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 msg.setBytes(bytes);
                 msg.setStartPos(start);
 
-                channel.writeAndFlush(msg);
+                ChannelFuture channelFuture = channel.writeAndFlush(msg);
+//                channel.flush();
+//                channelFuture.addListener(new ChannelFutureListener() {
+//                    @Override
+//                    public void operationComplete(ChannelFuture future) {
+//                        if (future.isSuccess()) {
+//                            log.debug("send success.");
+//                        } else {
+//                            log.debug("Failed to send message.");
+//                        }
+//                        Throwable cause = future.cause();
+//                        if (cause != null) {
+//                            log.warn(cause);
+//                        }
+//                    }
+//                });
                 time(start,msg.getFileLen());
 
                 start += read;

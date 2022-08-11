@@ -1,5 +1,6 @@
 package Server.SimpleChannelHandler;
 
+import Server.ChatServer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -13,7 +14,8 @@ public class IdleHandler extends SimpleChannelInboundHandler<IdleMessage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, IdleMessage msg) throws Exception {
-        log.info(msg.getStr());
+        String[] str = msg.getStr().split("!");
+        log.info("{}({}),{}",ChatServer.uidChannelMap.get(str[0]),str[0],str[1]);
     }
 
     @Override

@@ -115,6 +115,27 @@
             </DefaultRolloverStrategy>
         </RollingFile>
 
+        <RollingFile name="TraceLogRollingFile" fileName="${log_base_dir}/my_app_trace.log"
+                     filePattern="${log_base_dir}/$${date:yyyy_MM_dd}/my_app_trace_%d{yyyy_MM_dd_HH}_%i.log.gz">
+            <ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="${log_pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="${max_single_file_size}"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="nomax">
+                <Delete basePath="${log_base_dir}" maxDepth="2">
+                    <IfFileName glob="*/my_app_trace_*.log.gz">
+                        <IfAny>
+                            <IfAccumulatedFileSize exceeds="8MB"/>
+                            <IfAccumulatedFileCount exceeds="5"/>
+                            <IfLastModified age="9m"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
         <RollingFile name="InfoLogRollingFile" fileName="${log_base_dir}/my_app_info.log"
                      filePattern="${log_base_dir}/$${date:yyyy_MM_dd}/my_app_info_%d{yyyy_MM_dd_HH}_%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
@@ -130,27 +151,6 @@
                         - 只要日志文件总数量超过5个就删除按时间顺序最早的日志文件
                         - 只要日志文件总大小超过10MB就会删除按时间顺序最早的日志文件
                         - 只要日志文件最近修改时间为9分钟前或更早就会删除按时间顺序最早的日志文件 -->
-                        <IfAny>
-                            <IfAccumulatedFileSize exceeds="8MB"/>
-                            <IfAccumulatedFileCount exceeds="5"/>
-                            <IfLastModified age="9m"/>
-                        </IfAny>
-                    </IfFileName>
-                </Delete>
-            </DefaultRolloverStrategy>
-        </RollingFile>
-
-        <RollingFile name="TraceLogRollingFile" fileName="${log_base_dir}/my_app_trace.log"
-                     filePattern="${log_base_dir}/$${date:yyyy_MM_dd}/my_app_trace_%d{yyyy_MM_dd_HH}_%i.log.gz">
-            <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
-            <PatternLayout pattern="${log_pattern}"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="${max_single_file_size}"/>
-            </Policies>
-            <DefaultRolloverStrategy fileIndex="nomad">
-                <Delete basePath="${log_base_dir}" maxDepth="2">
-                    <IfFileName glob="*/my_app_trace_*.log.gz">
                         <IfAny>
                             <IfAccumulatedFileSize exceeds="8MB"/>
                             <IfAccumulatedFileCount exceeds="5"/>
@@ -235,7 +235,6 @@
         -->
         <Root level="ALL">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="TraceLogRollingFile"/>
             <AppenderRef ref="InfoLogRollingFile"/>
             <AppenderRef ref="WarnLogRollingFile"/>
             <AppenderRef ref="DebugLogRollingFile"/>
