@@ -41,7 +41,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 fm.setUser(user);
                 fm.setMe(me);
                 fm.setPerson(true);
-                ctx.writeAndFlush(fm.setReadOrWrite(false));
+                ctx.channel().writeAndFlush(fm.setReadOrWrite(false));
 
                 time(read, file.length());
             }else{
@@ -62,7 +62,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             return;
         }
 
-
         int readLen = msg.getEndPos();
         long start = msg.getStartPos();
         String path = file_dir + File.separator + msg.getName();
@@ -75,7 +74,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             start += readLen;
             msg.setStartPos(start);
             if(readLen > 0){
-                ctx.writeAndFlush(msg);
+                ctx.channel().writeAndFlush(msg);
             }
             time(start,msg.getFileLen());
 
@@ -133,7 +132,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                         msg.setEndPos(read);
                         msg.setBytes(bytes);
                         msg.setEndPos(read);
-                        ctx.writeAndFlush(msg);
+                        ctx.channel().writeAndFlush(msg);
 
                         start += read;
                         time(start,msg.getFileLen());

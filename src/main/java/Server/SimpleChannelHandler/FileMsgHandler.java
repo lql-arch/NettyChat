@@ -98,7 +98,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             msg.setStartPos(start);
 
             if(readLen > 0){
-                ctx.writeAndFlush(msg);
+                ctx.channel().writeAndFlush(msg);
             }
             else{
                 log.debug("读入完毕");

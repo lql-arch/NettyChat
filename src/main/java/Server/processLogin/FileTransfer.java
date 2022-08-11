@@ -31,7 +31,7 @@ public class FileTransfer {
             msg.setStartPos(start);
 
             if(readLen > 0){
-                ctx.writeAndFlush(msg);
+                ctx.channel().writeAndFlush(msg);
             }
             if(readLen <= 0 || start == msg.getFileLen()){
                 storageFiles(msg.getName(),path,msg, true);
@@ -48,7 +48,7 @@ public class FileTransfer {
             log.warn("文件已消失");
             msg.setPath(null);
             msg.setName(null);
-            ctx.writeAndFlush(msg);
+            ctx.channel().writeAndFlush(msg);
         }
         try(RandomAccessFile raf = new RandomAccessFile(file,"r")){
             raf.seek(msg.getStartPos());
@@ -73,7 +73,7 @@ public class FileTransfer {
                 msg.setFileLen(file.length());
                 msg.setBytes(bytes);
                 msg.setFileLen(file.length());
-                ctx.writeAndFlush(msg);
+                ctx.channel().writeAndFlush(msg);
             }
 
         }catch (IOException e){
