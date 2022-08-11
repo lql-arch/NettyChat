@@ -242,6 +242,14 @@ public class ChatServer {
 
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
+        sun.misc.SignalHandler handler = new sun.misc.SignalHandler() {
+            @Override
+            public void handle(sun.misc.Signal signal) {
+                System.out.println("别ctrl+c了，建议'ps aux' and 'kill'");
+            }
+        };    // 设置INT信号(Ctrl+C中断执行)交给指定的信号处理器处理，废掉系统自带的功能
+        sun.misc.Signal.handle(new sun.misc.Signal("INT"), handler);
+
         DbUtil dbUtil = DbUtil.loginMysql().start();
         new ChatServer().server();
         dbUtil.close();

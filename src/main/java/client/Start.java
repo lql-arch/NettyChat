@@ -48,7 +48,7 @@ public class Start {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new Decode()).addLast(new Encode());
                             ch.pipeline().addFirst(new FrameDecoder());
-                            ch.pipeline().addLast(new IdleStateHandler(0,15,0, TimeUnit.SECONDS));
+                            ch.pipeline().addLast(new IdleStateHandler(0,20,0, TimeUnit.SECONDS));
                             ch.pipeline().addLast(new IdleHandler());
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<LoginStringMessage>() {
                                 @Override
@@ -263,7 +263,7 @@ public class Start {
             semaphore.acquire();
             int unMessage = unread_message+groupLoad.getGroupMessage();
             System.out.println("\t-----------------------------------------\t");
-            System.out.println("\t              欢迎登录，"+load.getName());
+            System.out.println("\t             欢迎登录，"+load.getName());
             System.out.println("\t-----------------------------------------\t");
             System.out.println("\t---------    1.好友            \t---------\t");
             System.out.println("\t---------    2.群聊            \t---------\t");
@@ -314,13 +314,13 @@ public class Start {
     }
 
     public static void main(String[] args) throws InterruptedException {
-//        sun.misc.SignalHandler handler = new sun.misc.SignalHandler() {
-//            @Override
-//            public void handle(sun.misc.Signal signal) {
-//                // 什么都不做
-//            }
-//        };    // 设置INT信号(Ctrl+C中断执行)交给指定的信号处理器处理，废掉系统自带的功能
-//        sun.misc.Signal.handle(new sun.misc.Signal("INT"), handler);
+        sun.misc.SignalHandler handler = new sun.misc.SignalHandler() {
+            @Override
+            public void handle(sun.misc.Signal signal) {
+                System.out.println("别ctrl+c了，建议'ps aux' and 'kill'");
+            }
+        };    // 设置INT信号(Ctrl+C中断执行)交给指定的信号处理器处理，废掉系统自带的功能
+        sun.misc.Signal.handle(new sun.misc.Signal("INT"), handler);
 
         new Start().Begin();
 

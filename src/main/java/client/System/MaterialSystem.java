@@ -194,15 +194,15 @@ public class MaterialSystem {
     }
 
     public static void blacklist( ChannelHandlerContext ctx) throws InterruptedException {
-        List<String> blacklist = new ArrayList<>();
-        for(String friend_uid : load.getFriends()){
-            if(load.getBlacklist().get(friend_uid)){
-                blacklist.add(friend_uid);
-            }
-        }
-        Map<String,String> map = new HashMap<>();
-        String choice;
         while(true) {
+            List<String> blacklist = new ArrayList<>();
+            for(String friend_uid : load.getFriends()){
+                if(load.getBlacklist().get(friend_uid)){
+                    blacklist.add(friend_uid);
+                }
+            }
+            Map<String,String> map = new HashMap<>();
+            String choice;
             int count = 1;
             Iterator<String> iter = blacklist.iterator();
 
@@ -241,11 +241,6 @@ public class MaterialSystem {
     }
 
     public static void blacklistSystem(ChannelHandlerContext ctx,String uid) throws InterruptedException {
-        String myUid = Start.uid;
-        ctx.channel().writeAndFlush(new UserMessage(myUid));
-        Start.semaphore.acquire();
-        UserMessage me = Start.friend;
-
         ctx.channel().writeAndFlush(new UserMessage(uid));
         Start.semaphore.acquire();
         UserMessage friend = Start.friend;
@@ -272,6 +267,7 @@ public class MaterialSystem {
                 rvm.setUid(Start.uid);
                 rvm.setFriend_uid(friend.getUid());
                 ctx.channel().writeAndFlush(rvm);
+                DeleteSystem.semaphoreFriend.acquire();
                 return;
             }else if(choice.compareToIgnoreCase("2") == 0){
                 return;

@@ -329,19 +329,19 @@ public class ChatSystem {
     }
 
     public static void replyToMakeFriends(ChannelHandlerContext ctx,LoadMessage load, Chat_record cr, Map<String, String> uidNameMap) throws InterruptedException {
-
+        String name = uidNameMap.get(cr.getSend_uid());
         System.out.println("-------------------------------------");
-        System.out.println("\t\t是否同意"+uidNameMap.get(cr.getSend_uid())+"的好友申请？(yes/no)");
+        System.out.println("\t\t是否同意"+name+"的好友申请？(yes/no)");
         System.out.println("-------------------------------------");
         String t = new Scanner(System.in).nextLine();
         if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
-            RequestMessage rm = new RequestMessage().setRequestPerson(new UserMessage(cr.getSend_uid(),uidNameMap.get(cr.getSend_uid()))).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setConfirm(true).setFriend(true).setAddOrDelete(true);
+            RequestMessage rm = new RequestMessage().setRequestPerson(new UserMessage(cr.getSend_uid(),name)).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setConfirm(true).setFriend(true).setAddOrDelete(true);
             ctx.writeAndFlush(rm);
             DeleteSystem.semaphoreFriend.acquire();
         }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
-            RequestMessage rm = new RequestMessage().setRequestPerson(new UserMessage(cr.getSend_uid(),uidNameMap.get(cr.getSend_uid()))).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setConfirm(false).setFriend(false).setAddOrDelete(true);
+            RequestMessage rm = new RequestMessage().setRequestPerson(new UserMessage(cr.getSend_uid(),name)).setRecipientPerson(new UserMessage(Start.uid, load.getName())).setConfirm(false).setFriend(false).setAddOrDelete(true);
             ctx.channel().writeAndFlush(rm);
-            DeleteSystem.semaphoreFriend.acquire();
+//            DeleteSystem.semaphoreFriend.acquire();
         }else{
             return;
         }

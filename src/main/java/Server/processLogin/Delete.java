@@ -236,5 +236,7 @@ public class Delete {
         ps.setObject(1,msg.getUid());
         ps.execute();
 
+        ReviseMaterial.reviseOnline(msg.getUid(),false);
+
     }
 }

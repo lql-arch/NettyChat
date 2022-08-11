@@ -120,12 +120,12 @@ public class FindSystem {
             ctx.writeAndFlush(hn);
             Start.semaphore.acquire();
 
-            showHistoricalNews(me,friend);
+            showHistoricalNews(friend);
         }
 
     }
 
-    public static void showHistoricalNews(UserMessage me, UserMessage friend){
+    public static void showHistoricalNews(UserMessage friend){
         HistoricalNews hn = FindHistoricalNews.historicalNews;
         Iterator<Chat_record> iter = hn.getChat_record().listIterator();
         Timestamp one = null;
@@ -149,7 +149,8 @@ public class FindSystem {
                     System.out.println("\t\t"+one);
                 }
             }
-            System.out.println(cr.getSend_uid()+":"+cr.getText());
+            //chat.getSend_uid().equals(me.getUid()) ? me.getName() : friend.getName())
+            System.out.println((cr.getSend_uid().equals(me.getUid()) ? me.getName() : friend.getName())+":"+cr.getText());
             second = one;
         }
         System.out.println("----------------------------------------");
