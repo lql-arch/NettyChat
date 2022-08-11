@@ -24,6 +24,10 @@ public class UserMessage extends Message{
         this.name = name;
     }
 
+    public UserMessage() {
+
+    }
+
     public boolean isStatus() {
         return status;
     }

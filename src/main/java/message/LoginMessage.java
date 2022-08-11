@@ -131,7 +131,7 @@ public class LoginMessage extends Message {
             }
             if(password.compareTo("exit") == 0){
                 System.out.println("注册已取消");
-                break;
+                return null;
             }
             System.out.println("请再次确认密码：");
             String _password = sc.nextLine();
@@ -140,7 +140,6 @@ public class LoginMessage extends Message {
             }
             System.out.println("密码错误,请输入密码：(输入’exit‘退出)");
         }
-
 
         return new LoginMessage(password);
     }

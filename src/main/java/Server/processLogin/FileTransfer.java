@@ -32,10 +32,8 @@ public class FileTransfer {
 
             if(readLen > 0){
                 ctx.writeAndFlush(msg);
-            }else{
-                log.debug("读入完毕");
             }
-            if(readLen != 1024 * 1024 * 2){
+            if(readLen <= 0 || start == msg.getFileLen()){
                 storageFiles(msg.getName(),path,msg, true);
                 log.debug("写入完毕");
             }
@@ -60,7 +58,7 @@ public class FileTransfer {
             byte[] bytes = new byte[lastLength];
 
             if (lastLength == 0) {
-                System.out.println("文件读取完毕");
+                log.info("文件读取完毕");
                 return;
             }
 
@@ -68,9 +66,8 @@ public class FileTransfer {
                 msg.setEndPos(read);
                 msg.setFileLen(file.length());
                 msg.setBytes(bytes);
+                msg.setFileLen(file.length());
                 ctx.writeAndFlush(msg);
-            }else{
-                log.debug("文件读取完毕");
             }
 
         }catch (IOException e){

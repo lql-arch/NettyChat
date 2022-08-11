@@ -9,6 +9,7 @@ import message.UserMessage;
 import java.util.*;
 
 import static client.Start.load;
+import static client.Start.me;
 import static client.System.ChatSystem.isDigit;
 
 public class MaterialSystem {
@@ -17,7 +18,7 @@ public class MaterialSystem {
             boolean flag = true;
             ctx.channel().writeAndFlush(new UserMessage(Start.uid));
             Start.semaphore.acquire();
-            UserMessage me = Start.friend;
+            me = Start.friend;
 
             String t = me.getGander().startsWith("n") ? "男" : (me.getGander().startsWith( "m") ? "女" : "未知");
 
@@ -99,7 +100,6 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,null,newPassword,null));
-//                Start.count.await();
                 Start.semaphore.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){

@@ -1,10 +1,9 @@
 package client.SimpleChannelHandler;
 
+import client.System.DeleteSystem;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import message.RequestMessage;
-
-import static client.Start.semaphore;
 
 public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> {
     @Override
@@ -21,7 +20,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
             System.err.println("你与目标已经是好友了！");
         }else{
             System.out.println(msg.getNotice());
-            semaphore.release();
+            DeleteSystem.semaphoreFriend.release();
         }
     }
 }

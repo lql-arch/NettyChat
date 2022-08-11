@@ -88,7 +88,7 @@ public class SendMessageSystem {
         }
     }
 
-    public static void sendFileUser(ChannelHandlerContext ctx, UserMessage me, UserMessage friend){
+    public static void sendFileUser(ChannelHandlerContext ctx, UserMessage me, UserMessage friend) throws InterruptedException {
         System.out.println("-------------------------------------");
         System.out.println("\t\t\t\t传输文件");
         System.out.println("-------------------------------------");

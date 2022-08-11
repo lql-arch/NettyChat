@@ -10,8 +10,6 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.timeout.IdleState;
-import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import message.*;
 
@@ -34,6 +32,7 @@ public class Start {
     public static List<StringMessage> message = new ArrayList<>();//登录后的未读消息
     public static AtomicBoolean singleFlag = new AtomicBoolean(false);
     public static Map<String,String> uidNameMap = new HashMap<>();
+    public static UserMessage me = new UserMessage();
 
 
     public void Begin() throws InterruptedException {
@@ -119,6 +118,7 @@ public class Start {
                                         new Thread(() -> {
                                             try {
                                                 main_menu(ctx);
+                                                ctx.channel().close();
                                             } catch (Exception e) {
 //                                                System.err.println("main_menu exception end:"+e);
                                                 e.printStackTrace();
@@ -166,7 +166,7 @@ public class Start {
                                     }else{
                                         System.out.println("修改失败");
                                     }
-                                    semaphore.release();
+                                    DeleteSystem.semaphoreFriend.release();
                                 }
                             });
                             ch.pipeline().addLast(new SimpleChannelInboundHandler<StringMessage>() {
@@ -234,7 +234,10 @@ public class Start {
                 case "2":
                     break;
                 case "3":
-                    login = LoginMessage.register();
+                    if((login = LoginMessage.register()) == null) {
+                        error = true;
+                        break;
+                    }
                     ctx.channel().writeAndFlush(login);
                     break;
                 case "4":
@@ -252,6 +255,9 @@ public class Start {
         semaphore.acquire();
         ctx.writeAndFlush(new LoginStringMessage("group!"+uid));
         semaphore.acquire();
+        ctx.channel().writeAndFlush(new UserMessage(uid));
+        semaphore.acquire();
+        me = friend;
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+uid));
             semaphore.acquire();

@@ -45,12 +45,12 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             return;
         }
         if(msg.isReadOrWrite()){//向外传输文件
+            String path;
             if(msg.isPerson()) {
                 if (msg.getPath() == null)
                     LoadSystem.loadReadFile(msg);
                 FileTransfer.transferFile(ctx, msg);
             }else{//群文件
-                String path;
                 path = LoadSystem.loadReadFile(msg);//path为null代表文件不存在
                 sendForClient(ctx,msg,path);
             }

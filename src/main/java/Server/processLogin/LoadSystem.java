@@ -230,7 +230,7 @@ public class LoadSystem{
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 path = rs.getString("file_path");
-                msg.setPath(msg.getName());
+                msg.setPath(path);
             }else{
                 path = null;
                 msg.setPath(null);
@@ -243,7 +243,7 @@ public class LoadSystem{
             ResultSet rs = ps.executeQuery();
             if (rs.next()){
                 path = rs.getString("file_path");
-                msg.setPath(msg.getName());
+                msg.setPath(path);
             }else{
                 path = null;
                 msg.setPath(null);

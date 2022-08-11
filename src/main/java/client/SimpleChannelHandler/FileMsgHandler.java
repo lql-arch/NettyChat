@@ -14,16 +14,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
-    private static final Logger log = LogManager.getLogger();
     public static String file_dir ;
+    public static Semaphore fileSemaphore = new Semaphore(0);
 
-    private static final EventLoopGroup worker = new NioEventLoopGroup();
-
-    public static void sendFile(ChannelHandlerContext ctx, File file,UserMessage me, UserMessage user){
+    public static void sendFile(ChannelHandlerContext ctx, File file,UserMessage me, UserMessage user) throws InterruptedException {
         FileMessage fm = new FileMessage();
         fm.setStartPos(0);
 
@@ -42,6 +41,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 fm.setMe(me);
                 fm.setPerson(true);
                 ctx.writeAndFlush(fm.setReadOrWrite(false));
+
+                time(read, file.length());
             }else{
                 System.out.println("文件已读完");
             }
@@ -49,6 +50,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        fileSemaphore.acquire();
     }
 
     public static void receiveFiles(ChannelHandlerContext ctx, FileMessage msg){
@@ -65,12 +68,12 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             msg.setStartPos(start);
             if(readLen > 0){
                 ctx.writeAndFlush(msg);
-            }else{
-                log.debug("写入完毕");
             }
+            time(start,msg.getFileLen());
 
-            if(readLen != 1024 * 1024 * 2){
-                log.debug("写入完毕");
+            if(readLen <= 0 || start == msg.getFileLen()){
+                fileSemaphore.release();
+                System.out.println("写入完毕");
             }
 
         } catch (IOException e) {
@@ -100,31 +103,32 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             }
             if (msg.getStartPos() != -1) {
                 try (RandomAccessFile raf = new RandomAccessFile(msg.getPath(), "rw")) {
-                    raf.seek(msg.getStartPos());
+                    long start = msg.getStartPos();
                     int read;
                     int lastLength;
-                    if (msg.getFileLen() < 1024) {
-                        lastLength = (int) msg.getFileLen();
-                    } else {
-                        int length = (int) (Math.min((msg.getFileLen() / 10), 1024 * 1024 * 2));
-                        lastLength = length < (msg.getFileLen() - msg.getStartPos()) ? length : (int) (msg.getFileLen() - msg.getStartPos());
-                    }
+
+                    raf.seek(start);
+                    int length = (int) (Math.min((msg.getFileLen() / 10), 1024 * 1024 * 2));
+                    lastLength = length < (msg.getFileLen() - msg.getStartPos()) ? length : (int) (msg.getFileLen() - msg.getStartPos());
                     if (lastLength < 0) {
                         System.err.println("Error：lastLength为负数.");
                         return;
                     }
-                    if (lastLength == 0) {
+                    if (lastLength == 0 || start == msg.getFileLen()) {
+                        fileSemaphore.release();
                         System.out.println("文件读取完毕");
                         return;
                     }
                     byte[] bytes = new byte[lastLength];
-//            log.debug("byte 长度：" + bytes.length);
+                    time(msg.getStartPos(),msg.getFileLen());
                     if ((read = raf.read(bytes)) != -1) {
                         msg.setEndPos(read);
                         msg.setBytes(bytes);
+                        msg.setEndPos(read);
                         ctx.writeAndFlush(msg);
-                    } else {
-                        System.out.println("文件读取完毕!");
+
+                        start += read;
+                        time(start,msg.getFileLen());
                     }
                 }
             }
