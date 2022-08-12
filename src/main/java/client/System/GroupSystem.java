@@ -670,7 +670,7 @@ public class GroupSystem {
             System.out.println("---------------------------------------------");
             System.out.println("\t群主:");
             countMap.put(count, msg.getGroup_master());
-            System.out.printf("\t%d.%20s\n", count++, msg.getGroupName());
+            System.out.printf("\t%d.%20s\n", count++, msg.getMasterName());
             System.out.println("\t管理员:");
             for (String aUid : msg.getAdministrator()) {
                 String name = msg.getUidNameMap().get(aUid);
