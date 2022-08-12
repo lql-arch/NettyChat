@@ -198,7 +198,7 @@ public class ChatSystem {
                 if(group.getMessage() == 0)
                     continue;
                 countMap.put(count, group);
-                System.out.printf("%5d.%20s(new)",count++,group.getGroupName());
+                System.out.printf("%5d.%20s(new)\n",count++,group.getGroupName());
             }
             System.out.println("------------------------------------------");
             System.out.println("输入“EXIT”退出");

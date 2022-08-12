@@ -1,29 +1,27 @@
 package client.SimpleChannelHandler;
 
 import client.Start;
+import client.normal.saveFile;
 import config.ToMessage;
+import config.execToVerify;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
 import message.FileMessage;
 import message.UserMessage;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
-    private static final Logger log = LogManager.getLogger();
+//    private static final Logger log = LogManager.getLogger();
     public static String file_dir ;
     public static Semaphore fileSemaphore = new Semaphore(0);
     public static String sum ;
+
+    static EventLoopGroup executors = new DefaultEventLoopGroup();
 
     public static void sendFile(ChannelHandlerContext ctx, File file,UserMessage me, UserMessage user) throws InterruptedException {
         FileMessage fm = new FileMessage();
@@ -164,13 +162,21 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         sum = msg.getSha1sum();
         msg.setSha1sum(null);
 
+
         File file = new File(path);
         byte[] bytes = msg.getBytes();
 
         try(RandomAccessFile raf = new RandomAccessFile(file,"rw")){
             raf.seek(start);
             raf.write(bytes);
+            msg.setStartPos(start);
+            msg.setPath(path);
             start += read;
+//            System.out.println(msg.getTime()+" "+msg.getPath()+" "+msg.getName()+" "+msg.getStartPos());
+            executors.execute(()->{
+                saveFile.saveFileStart(msg);
+
+            });
 
             time(start,msg.getFileLen());
             if(start >= msg.getFileLen()){
@@ -201,6 +207,9 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 msg.setStartPos(start.get());
                 msg.setEndPos(read);
                 msg.setBytes(bytes);
+                if(start.get() + read == file.length()){
+                    msg.setSha1sum(execToVerify.sha1Verify(file.getPath()));
+                }
                 ChannelFuture channelFuture = ctx.channel().writeAndFlush(msg);
                 channelFuture.awaitUninterruptibly(1, TimeUnit.SECONDS);
 
@@ -216,6 +225,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             }
         }catch (IOException e){
             e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         Start.semaphore.release();

@@ -206,7 +206,7 @@ public class ChatServer {
                             });
 
                             ch.pipeline().addLast(new RequestHandler());
-                            ch.pipeline().addLast(new FileMsgHandler(uidChannelMap,channelUidMap));
+                            ch.pipeline().addLast(new FileMsgHandler());
                             ch.pipeline().addLast(new FileReadHandler());
                             ch.pipeline().addLast(new FindHistoricalNews());
                             ch.pipeline().addLast(new LoadGroupNewsHandler());

@@ -8,6 +8,7 @@ import config.ToMessage;
 import config.execToVerify;
 import io.netty.channel.*;
 import message.FileMessage;
+import message.ShowMessage;
 import message.StringMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,32 +16,25 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static Server.ChatServer.uidChannelMap;
 import static Server.processLogin.Delete.DeleteGroupFile;
 import static Server.processLogin.Storage.storageGroupFiles;
 
 public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     private static final Logger log = LogManager.getLogger();
     private static final String file_dir = "/home/bronya/tempFile";
-    Map<String,Channel> uidChannelMap;
-    Map<Channel,String> channelUidMap;
-
-    public FileMsgHandler(Map<String,Channel> uidChannelMap,Map<Channel,String> channelUidMap){
-        this.uidChannelMap = uidChannelMap;
-        this.channelUidMap = channelUidMap;
-    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FileMessage msg) throws Exception {
         if(msg.isDeleteFile()){
             if(!msg.isPerson()){
                 DeleteGroupFile(msg);
-                ChatServer.uidChannelMap.get(msg.getMyUid()).writeAndFlush(msg);
+                uidChannelMap.get(msg.getMyUid()).writeAndFlush(msg);
             }
             return;
         }
@@ -78,7 +72,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             if(msg.getStartPos() == 0){//第一次
                 firstSend(ctx,msg);
             }else{//后面
-                GroupSend(msg);
+                GroupSend(ctx,msg);
             }
         }
 
@@ -113,7 +107,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         }
     }
 
-    public static void GroupSend(FileMessage msg){
+    public static void GroupSend(ChannelHandlerContext ctx,FileMessage msg){
         String path = file_dir + File.separator + msg.getName();
         int readLen = msg.getEndPos();
         long start = msg.getStartPos();
@@ -128,9 +122,17 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             time(start,msg.getFileLen());
 
             if(start == msg.getFileLen()){
-                log.debug("写入完毕");
+                String sum = msg.getSha1sum();
+                msg.setPath(path);
+                if(!execToVerify.equal(sum,file.getPath())){
+                    DeleteGroupFile(msg);
+                    String str = "sa1sum值错误，请重试传输，或通知人员修复";
+                    ctx.writeAndFlush(new ShowMessage().setStr(str).setRequest(false).setUid(msg.getUid()));
+                    log.warn(str);
+                }else
+                    log.debug("写入完毕");
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -150,7 +152,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         executors.execute(() -> {
             log.debug("defaultEventLoopGroup启动");
             long start = msg.getStartPos();
-            Channel channel = ChatServer.uidChannelMap.get(msg.getMyUid());
+            Channel channel = uidChannelMap.get(msg.getMyUid());
 
             File file = new File(path);
             if(!file.exists()){
@@ -160,7 +162,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 channel.writeAndFlush(msg);
                 return;
             }
-
 
             msg.setFileLen(file.length());
             int length = (int)(file.length()/10 < 1024 * 1024 * 4 ? file.length() / 10 : 1024 * 1024 * 4);
@@ -184,10 +185,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                         }
                     });
                     channelFuture.awaitUninterruptibly(1,TimeUnit.SECONDS);
-//                        if(!channel.isWritable()){
-//                            log.debug(channel.isWritable());
-////                            channelFuture.syncUninterruptibly();
-//                        }
 
                     start += read;
 

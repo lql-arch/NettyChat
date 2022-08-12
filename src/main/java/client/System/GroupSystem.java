@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static client.SimpleChannelHandler.FileMsgHandler.sum;
 import static client.Start.*;
 import static client.Start.uid;
 import static client.System.ChatSystem.friendMaterial;
@@ -530,7 +529,7 @@ public class GroupSystem {
             if (choice.compareToIgnoreCase("exit") == 0) {
                 return;
             }
-            if(choice.compareToIgnoreCase("delete") == 0){
+            if(choice.compareToIgnoreCase("delete") == 0 && (msg.getGroup_master().compareTo(uid) == 0 || msg.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0))){
                 deleteFile(ctx,time,fileRead,msg,count,countMap);
                 break;
             }
@@ -568,7 +567,7 @@ public class GroupSystem {
                         break;
                     }
                 }else{
-                    System.out.println("是否修改接收路径（yes/no）(输入“exit”退出)");
+                    System.out.println("是否修改接收路径（yes/no）(输入“exit”退出)(上次路径："+FileMsgHandler.file_dir+")");
                     String t = new Scanner(System.in).next();
                     if(t.compareToIgnoreCase("exit") == 0){
                         flag = false;
@@ -597,21 +596,11 @@ public class GroupSystem {
 
                 semaphore.acquire();
 
-                if(!execToVerify.equal(sum,path1)){
+                if(execToVerify.equal(FileMsgHandler.sum,path1)){
                     System.out.println("sha1sum值正确");
                 }else{
-                    fm = new FileMessage();
-                    name = name;
-                    fm.setName(name);
-                    fm.setTime(time.get(name));
-                    fm.setMyUid(uid);
-                    fm.setUid(fileRead.getFilePersonMap().get(name));
-                    fm.setGid(msg.getGid());
-                    fm.setPerson(false);
 
-                    ctx.writeAndFlush(fm.setDeleteFile(true));
-                    semaphore.acquire();
-                    System.out.println("sa1sum值错误，请重试获取，或通知人员修复");
+                    System.out.println("sa1sum值错误，请重试传输，或通知人员修复");
                 }
 
                 break;
@@ -648,7 +637,7 @@ public class GroupSystem {
         }
     }
 
-    public static void sendGroupFile(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+    public static void sendGroupFile(ChannelHandlerContext ctx,LoadGroupMessage msg) throws Exception {
         System.out.println("-------------------------------------");
         System.out.println("\t\t\t\t传输文件");
         System.out.println("-------------------------------------");
@@ -673,6 +662,7 @@ public class GroupSystem {
             fm.setName(file.getName());
             fm.setFileLen(file.length());
             fm.setPath(file.getPath());
+            fm.setSha1sum(execToVerify.sha1Verify(file.getPath()));
             if((read = randomAccessFile.read(bytes)) != -1){
                 fm.setBytes(bytes);
                 fm.setEndPos(read);
