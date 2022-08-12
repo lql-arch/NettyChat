@@ -27,6 +27,8 @@ public class FileMessage extends Message{
 
     private boolean readOrWrite;//true = read , false = write
 
+    private String sha1sum;
+
 
     public FileMessage setDeleteFile(boolean deleteFile){
         this.deleteFile = deleteFile;
@@ -47,4 +49,32 @@ public class FileMessage extends Message{
     public int getLength() {
         return 0;
     }
+
+
+    public String getSha1sum() {
+        return sha1sum;
+    }
+
+    public void setSha1sum(String sha1sum) {
+        this.sha1sum = sha1sum;
+    }
+
+    public static FileMessage clone(FileMessage lgm){
+        FileMessage msg = new FileMessage();
+        msg.name = lgm.getName();
+        msg.path = lgm.getPath();
+        msg.fileLen = lgm.getFileLen();
+        msg.person = lgm.isPerson();
+        msg.time = lgm.getTime();
+        //单人文件
+        msg.user = lgm.getUser();
+        msg.me = lgm.getMe();
+        //群文件
+        msg.gid = lgm.getGid();
+        msg.uid = lgm.getUid();
+        msg.myUid = lgm.getMyUid();
+        msg.deleteFile = lgm.isDeleteFile();
+        return msg;
+    }
+
 }

@@ -140,7 +140,7 @@ public class ChatSystem {
     }
 
 
-    public static void unreadMessage(ChannelHandlerContext ctx) throws InterruptedException, IOException {
+    public static void unreadMessage(ChannelHandlerContext ctx) throws Exception {
         while(true){
             ctx.writeAndFlush(new LoginStringMessage("flush!"+uid));
             semaphore.acquire();
@@ -184,7 +184,7 @@ public class ChatSystem {
         }
     }
 
-    public static void unreadGroupMsg(ChannelHandlerContext ctx) throws InterruptedException, IOException {
+    public static void unreadGroupMsg(ChannelHandlerContext ctx) throws Exception {
         while(true) {
             ctx.writeAndFlush(new LoginStringMessage("group!" + uid));
             semaphore.acquire();
@@ -359,7 +359,7 @@ public class ChatSystem {
             int count = 1;
 
             System.out.println("------------------------------------------------------------------------------------------");
-            System.out.println("\t\t\t输入\"quit\"返回");
+            System.out.println("\t\t\t输入\"exit\"返回");
             System.out.println("------------------------------------------------------------------------------------------");
             System.out.printf("%5s\t%20s\t%20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
             if(fileRead.getFilePersonMap() == null && fileRead.getFileTimeMap() == null){
@@ -382,7 +382,7 @@ public class ChatSystem {
 
             while (true) {
                 String choice = new Scanner(System.in).nextLine();
-                if (choice.compareToIgnoreCase("quit") == 0) {
+                if (choice.compareToIgnoreCase("exit") == 0) {
                     return;
                 }
                 if (!isDigit(choice)) {

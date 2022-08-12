@@ -34,12 +34,13 @@ public class ChatServer {
         ServerBootstrap boot = new ServerBootstrap();
         EventLoopGroup boss = new NioEventLoopGroup(1);
         EventLoopGroup worker = new NioEventLoopGroup();
-
+        System.setProperty("io.netty.eventLoop.maxPendingTasks", "2048");
         try{
             ChannelFuture future = boot.group(boss,worker)
                     .channel(NioServerSocketChannel.class)
                     .option(ChannelOption.SO_BACKLOG,128)
                     .childOption(ChannelOption.SO_KEEPALIVE,true)// 9次
+                    .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 *1024* 1024 , 32 * 1024 * 1024))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {

@@ -5,6 +5,7 @@ import Server.processLogin.FileTransfer;
 import Server.processLogin.LoadSystem;
 import Server.processLogin.Storage;
 import config.ToMessage;
+import config.execToVerify;
 import io.netty.channel.*;
 import message.FileMessage;
 import message.StringMessage;
@@ -18,6 +19,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static Server.processLogin.Delete.DeleteGroupFile;
 import static Server.processLogin.Storage.storageGroupFiles;
@@ -82,7 +84,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
     }
 
-    public static void firstSend(ChannelHandlerContext ctx, FileMessage msg) throws SQLException {
+    public static void firstSend(ChannelHandlerContext ctx, FileMessage msg) throws Exception {
         String path = file_dir + File.separator + msg.getName();
         int readLen = msg.getEndPos();
         long start = msg.getStartPos();
@@ -123,6 +125,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             raf.write(bytes);
             start += readLen ;
 
+            time(start,msg.getFileLen());
+
             if(start == msg.getFileLen()){
                 log.debug("写入完毕");
             }
@@ -132,69 +136,73 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
     }
 
-    public static void sendForClient(ChannelHandlerContext ctx, FileMessage msg,String path){
+    public static void sendForClient(ChannelHandlerContext ctx, FileMessage msg,String path) throws Exception {
         if(msg.getPath() == null || path == null){
             log.error("查无此文件");
             msg.setName(null);
             ctx.channel().writeAndFlush(msg);
             return;
         }
+        log.debug("defaultEventLoopGroup开始启动");
+        msg.setSha1sum(execToVerify.sha1Verify(path));
 
-        long start = msg.getStartPos();
-        Channel channel = ChatServer.uidChannelMap.get(msg.getMyUid());
+        EventLoopGroup executors = new DefaultEventLoopGroup(16);
+        executors.execute(() -> {
+            log.debug("defaultEventLoopGroup启动");
+            long start = msg.getStartPos();
+            Channel channel = ChatServer.uidChannelMap.get(msg.getMyUid());
 
-        File file = new File(path);
-        if(!file.exists()){
-            log.error("文件已消失");
-            msg.setName(null);
-            msg.setPath(null);
-            channel.writeAndFlush(msg);
-            return;
-        }
-        msg.setFileLen(file.length());
-        int length = (int)(file.length()/10 < 1024 * 1024 * 4 ? file.length() / 10 : 1024 * 1024 * 4);
-        byte[] bytes = new byte[length];
-        int lastLength;
-
-        try(RandomAccessFile raf = new RandomAccessFile(file,"rw")) {
-            int read ;
-            while ((read = raf.read(bytes)) != -1){
-                msg.setEndPos(read);
-                msg.setBytes(bytes);
-                msg.setStartPos(start);
-
-                ChannelFuture channelFuture = channel.writeAndFlush(msg);
-//                channel.flush();
-//                channelFuture.addListener(new ChannelFutureListener() {
-//                    @Override
-//                    public void operationComplete(ChannelFuture future) {
-//                        if (future.isSuccess()) {
-//                            log.debug("send success.");
-//                        } else {
-//                            log.debug("Failed to send message.");
-//                        }
-//                        Throwable cause = future.cause();
-//                        if (cause != null) {
-//                            log.warn(cause);
-//                        }
-//                    }
-//                });
-                time(start,msg.getFileLen());
-
-                start += read;
-                lastLength = length > (file.length() - start) ? (int) (file.length() - start) : length;
-                bytes = new byte[lastLength];
-                if(start == file.length() || lastLength == 0){
-                    log.debug("发送完毕");
-                    break;
-                }
+            File file = new File(path);
+            if(!file.exists()){
+                log.error("文件已消失");
+                msg.setName(null);
+                msg.setPath(null);
+                channel.writeAndFlush(msg);
+                return;
             }
 
 
-        }catch (IOException e){
-            e.printStackTrace();
-        }
+            msg.setFileLen(file.length());
+            int length = (int)(file.length()/10 < 1024 * 1024 * 4 ? file.length() / 10 : 1024 * 1024 * 4);
+            byte[] bytes = new byte[length];
+            int lastLength;
 
+            try(RandomAccessFile raf = new RandomAccessFile(file,"rw")) {
+                int read ;
+                while ((read = raf.read(bytes)) != -1){
+                    msg.setEndPos(read);
+                    msg.setBytes(bytes);
+                    msg.setStartPos(start);
+
+                    ChannelFuture channelFuture = channel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
+                        if (!future.isSuccess()) {
+                            log.debug("Failed to send message.");
+                        }
+                        Throwable cause = future.cause();
+                        if (cause != null) {
+                            log.warn(cause);
+                        }
+                    });
+                    channelFuture.awaitUninterruptibly(1,TimeUnit.SECONDS);
+//                        if(!channel.isWritable()){
+//                            log.debug(channel.isWritable());
+////                            channelFuture.syncUninterruptibly();
+//                        }
+
+                    start += read;
+
+                    time(start, msg.getFileLen());
+                    lastLength = length > (file.length() - start) ? (int) (file.length() - start) : length;
+                    bytes = new byte[lastLength];
+                    if(start == file.length() || lastLength == 0){
+                        log.debug("发送完毕");
+                        break;
+                    }
+                }
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+        });
     }
 
     private static void time(long start,long fileLength){

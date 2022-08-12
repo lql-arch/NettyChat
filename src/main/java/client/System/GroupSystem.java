@@ -5,6 +5,7 @@ import client.Start;
 import client.normal.Chat_group;
 import client.normal.GroupChat_text;
 import config.ToMessage;
+import config.execToVerify;
 import io.netty.channel.ChannelHandlerContext;
 import message.*;
 import org.jetbrains.annotations.NotNull;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static client.SimpleChannelHandler.FileMsgHandler.sum;
 import static client.Start.*;
 import static client.Start.uid;
 import static client.System.ChatSystem.friendMaterial;
@@ -26,6 +28,7 @@ public class GroupSystem {
     public static AtomicBoolean groupChat = new AtomicBoolean(false);
     public static volatile Map<String,List<GroupChat_text>> groupChat_texts = new HashMap<>();
     public static Map<String,Boolean> groupIsRead = new HashMap<>();
+    private static String path1;
 
     public static GroupChat_text addGroupChat_texts(String uid,String gid,String time,String name,String text){
         GroupChat_text groupChat_text = new GroupChat_text();
@@ -55,11 +58,11 @@ public class GroupSystem {
 
         return lgm;
     }
-    public static void groupSystem(ChannelHandlerContext ctx) throws InterruptedException, IOException {
+    public static void groupSystem(ChannelHandlerContext ctx) throws Exception {
         while(true) {
             boolean flag = true;
             System.out.println("---------------------------------------------");
-            System.out.println("\t\t\t输入\"quit\"返回");
+            System.out.println("\t\t\t输入\"exit\"返回");
             System.out.println("---------------------------------------------");
             System.out.println("\t\t\t1.展示群列表");
             System.out.println("\t\t\t2.查询群聊（gid）");
@@ -77,7 +80,7 @@ public class GroupSystem {
                 }catch (Exception e){
                     return;
                 }
-                if (choice.compareToIgnoreCase("quit") == 0) {
+                if (choice.compareToIgnoreCase("exit") == 0) {
                     return;
                 }
                 if (!isDigit(choice)) {
@@ -112,7 +115,7 @@ public class GroupSystem {
 
     }
 
-    public static void showGroupSystem(ChannelHandlerContext ctx,int type) throws InterruptedException, IOException {
+    public static void showGroupSystem(ChannelHandlerContext ctx,int type) throws Exception {
 
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("group!" + uid));
@@ -125,7 +128,7 @@ public class GroupSystem {
 
 
             System.out.println("---------------------------------------------");
-            System.out.println("\t\t\t输入\"quit\"返回");
+            System.out.println("\t\t\t输入\"exit\"返回");
             System.out.println("---------------------------------------------");
             while (iter.hasNext()) {
                 Chat_group cg = iter.next();
@@ -142,7 +145,7 @@ public class GroupSystem {
 
             while (true) {
                 String choice = new Scanner(System.in).nextLine();
-                if (choice.compareToIgnoreCase("quit") == 0) {
+                if (choice.compareToIgnoreCase("exit") == 0) {
                     return;
                 }
                 if (!isDigit(choice)) {
@@ -164,7 +167,7 @@ public class GroupSystem {
 
 
 
-    public static void showChatGroup(ChannelHandlerContext ctx,LoadGroupMessage lgm) throws InterruptedException, IOException {
+    public static void showChatGroup(ChannelHandlerContext ctx,LoadGroupMessage lgm) throws Exception {
         while(true) {
             ctx.channel().writeAndFlush(lgm);
             Start.semaphore.acquire();
@@ -462,7 +465,7 @@ public class GroupSystem {
 
     }
 
-    public static void GroupFiles(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
+    public static void GroupFiles(ChannelHandlerContext ctx,LoadGroupMessage msg) throws Exception {
         while (true) {
         System.out.println("---------------------------------------------");
         System.out.println("\t1.发送群文件\t2.查看群文件\t3.返回");
@@ -489,39 +492,40 @@ public class GroupSystem {
         }
     }
 
-    public static void viewGroupFile(ChannelHandlerContext ctx,LoadGroupMessage msg) throws InterruptedException {
-        FileRead fileRead = new FileRead();
-        ctx.writeAndFlush(fileRead.setUid(uid).setGid(msg.getGid()).setSingleOrGroup(false));
-        semaphore.acquire();
-        ctx.channel().writeAndFlush(msg);
-        Start.semaphore.acquire();
-        msg = LoadGroupNewsHandler.groupMessage;
-
-        fileRead = FileReadHandler.fileRead;
-        Map<String, String> time = fileRead.getFileTimeMap();
-        Map<Integer, String> countMap = new HashMap<>();
-        int count = 1;
-
-        System.out.println("------------------------------------------------------------------------------------------------------------");
-        System.out.println("\t\t\t输入\"exit\"返回");
-        System.out.println("------------------------------------------------------------------------------------------------------------");
-        System.out.printf("%5s %50s %20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
-        if(fileRead.getFilePersonMap() == null || fileRead.getFileTimeMap() == null){
-            System.out.println("------------------------------------------------------------------------------------------------------------");
-            return;
-        }
-        for (Map.Entry<String, String> person : fileRead.getFilePersonMap().entrySet()) {
-            String name = msg.getUidNameMap().get(person.getValue());
-            countMap.put(count, person.getKey());
-            System.out.printf("%5d %50s %20s\t%20s\n", count++, person.getKey(), name, time.get(person.getKey()));
-        }
-        System.out.println("------------------------------------------------------------------------------------------------------------");
-        if(msg.getGroup_master().compareTo(uid) == 0 || msg.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0)){
-            System.out.println("输入“delete”进入删除界面");
-            System.out.println("------------------------------------------------------------------------------------------------------------");
-        }
-
+    public static void viewGroupFile(ChannelHandlerContext ctx,LoadGroupMessage msg) throws Exception {
         while (true) {
+            FileRead fileRead = new FileRead();
+            ctx.writeAndFlush(fileRead.setUid(uid).setGid(msg.getGid()).setSingleOrGroup(false));
+            semaphore.acquire();
+            ctx.channel().writeAndFlush(msg);
+            Start.semaphore.acquire();
+            msg = LoadGroupNewsHandler.groupMessage;
+
+            fileRead = FileReadHandler.fileRead;
+            Map<String, String> time = fileRead.getFileTimeMap();
+            Map<Integer, String> countMap = new HashMap<>();
+            int count = 1;
+
+            System.out.println("------------------------------------------------------------------------------------------------------------");
+            System.out.println("\t\t\t输入\"exit\"返回");
+            System.out.println("------------------------------------------------------------------------------------------------------------");
+            System.out.printf("%5s %50s %20s\t%20s\n", "id", "file_name", "file_sender", "file_time");
+            if(fileRead.getFilePersonMap() == null || fileRead.getFileTimeMap() == null){
+                System.out.println("------------------------------------------------------------------------------------------------------------");
+                return;
+            }
+            for (Map.Entry<String, String> person : fileRead.getFilePersonMap().entrySet()) {
+                String name = msg.getUidNameMap().get(person.getValue());
+                countMap.put(count, person.getKey());
+                System.out.printf("%5d %50s %20s\t%20s\n", count++, person.getKey(), name, time.get(person.getKey()));
+            }
+            System.out.println("------------------------------------------------------------------------------------------------------------");
+            if(msg.getGroup_master().compareTo(uid) == 0 || msg.getAdministrator().stream().anyMatch(a -> a.compareTo(uid) == 0)){
+                System.out.println("输入“delete”进入删除界面");
+                System.out.println("------------------------------------------------------------------------------------------------------------");
+            }
+
+            boolean flag = true;
             String choice = new Scanner(System.in).nextLine();
             if (choice.compareToIgnoreCase("exit") == 0) {
                 return;
@@ -549,8 +553,13 @@ public class GroupSystem {
 
                 if(FileMsgHandler.file_dir == null){
                     while(true) {
-                        System.out.println("请设置文件接收地址（绝对地址）：");
-                        FileMsgHandler.file_dir = new Scanner(System.in).nextLine();
+                        System.out.println("请设置文件接收地址（绝对地址）(输入“exit”退出)：");
+                        String dir = new Scanner(System.in).nextLine();
+                        if(dir.compareToIgnoreCase("exit") == 0){
+                            flag = false;
+                            break;
+                        }
+                        FileMsgHandler.file_dir = dir;
                         File folder = new File(FileMsgHandler.file_dir);
                         if (!folder.exists() && !folder.isDirectory()) {
                             System.out.println("地址不存在");
@@ -559,8 +568,12 @@ public class GroupSystem {
                         break;
                     }
                 }else{
-                    System.out.println("是否修改接收路径（yes/no）");
+                    System.out.println("是否修改接收路径（yes/no）(输入“exit”退出)");
                     String t = new Scanner(System.in).next();
+                    if(t.compareToIgnoreCase("exit") == 0){
+                        flag = false;
+                        break;
+                    }
                     if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                         while(true) {
                             System.out.println("请设置文件接收地址（绝对地址）：");
@@ -574,9 +587,21 @@ public class GroupSystem {
                         }
                     }
                 }
+                if(!flag){
+                    break;
+                }
+
+                path1 = FileMsgHandler.file_dir + File.separator + name;
+
                 ctx.writeAndFlush(fm.setReadOrWrite(true));
 
                 semaphore.acquire();
+
+                if(execToVerify.equal(sum,path1)){
+                    System.out.println("sha1sum值正确");
+                }else{
+                    System.out.println("sa1sum值错误，请重试获取，或通知人员修复");
+                }
 
                 break;
             }

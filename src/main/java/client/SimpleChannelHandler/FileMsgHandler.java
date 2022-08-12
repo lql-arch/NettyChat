@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -22,6 +23,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
     private static final Logger log = LogManager.getLogger();
     public static String file_dir ;
     public static Semaphore fileSemaphore = new Semaphore(0);
+    public static String sum ;
 
     public static void sendFile(ChannelHandlerContext ctx, File file,UserMessage me, UserMessage user) throws InterruptedException {
         FileMessage fm = new FileMessage();
@@ -159,6 +161,9 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         int read = msg.getEndPos();
         String path = file_dir + File.separator + msg.getName();
 
+        sum = msg.getSha1sum();
+        msg.setSha1sum(null);
+
         File file = new File(path);
         byte[] bytes = msg.getBytes();
 
@@ -181,23 +186,28 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
         AtomicLong start = new AtomicLong(msg.getStartPos());
 
+
+
         File file = new File(msg.getPath());
         try(RandomAccessFile raf = new RandomAccessFile(file,"rw")){
             raf.seek(start.get());
             int length = (int) (Math.min((msg.getFileLen() / 10), 1024 * 1024 * 2));
-            int lastLength = length < (file.length() - start.get()) ? length : (int) (file.length() - start.get());
+            long endLen = file.length() - start.get();
+            int lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
 
             byte[] bytes = new byte[lastLength];
-            int read ;
+            int read;
             while((read = raf.read(bytes)) != -1){
                 msg.setStartPos(start.get());
                 msg.setEndPos(read);
                 msg.setBytes(bytes);
                 ChannelFuture channelFuture = ctx.channel().writeAndFlush(msg);
+                channelFuture.awaitUninterruptibly(1, TimeUnit.SECONDS);
 
                 start.compareAndSet(start.get(), start.get() + read);
                 time(start.get(),file.length());//显示进度条
-                lastLength = length < (file.length() - start.get()) ? length : (int) (file.length() - start.get());
+                endLen = file.length() - start.get();
+                lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
                 bytes = new byte[lastLength];
                 if(start.get() == file.length() ){
                     System.out.println("发送完毕");
