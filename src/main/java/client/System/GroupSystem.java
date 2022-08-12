@@ -597,9 +597,20 @@ public class GroupSystem {
 
                 semaphore.acquire();
 
-                if(execToVerify.equal(sum,path1)){
+                if(!execToVerify.equal(sum,path1)){
                     System.out.println("sha1sum值正确");
                 }else{
+                    fm = new FileMessage();
+                    name = name;
+                    fm.setName(name);
+                    fm.setTime(time.get(name));
+                    fm.setMyUid(uid);
+                    fm.setUid(fileRead.getFilePersonMap().get(name));
+                    fm.setGid(msg.getGid());
+                    fm.setPerson(false);
+
+                    ctx.writeAndFlush(fm.setDeleteFile(true));
+                    semaphore.acquire();
                     System.out.println("sa1sum值错误，请重试获取，或通知人员修复");
                 }
 
