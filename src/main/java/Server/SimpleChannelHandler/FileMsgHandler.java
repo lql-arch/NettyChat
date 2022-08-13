@@ -45,7 +45,10 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                     LoadSystem.loadReadFile(msg);
                 FileTransfer.transferFile(ctx, msg);
             }else{//群文件
-                path = LoadSystem.loadReadFile(msg);//path为null代表文件不存在
+                if (msg.getPath() == null)
+                    path = LoadSystem.loadReadFile(msg);//path为null代表文件不存在
+                else
+                    path = msg.getPath();
                 sendForClient(ctx,msg,path);
             }
             return;
@@ -145,7 +148,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             ctx.channel().writeAndFlush(msg);
             return;
         }
-        log.debug("defaultEventLoopGroup开始启动");
         msg.setSha1sum(execToVerify.sha1Verify(path));
 
         EventLoopGroup executors = new DefaultEventLoopGroup(16);
@@ -165,19 +167,25 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
             msg.setFileLen(file.length());
             int length = (int)(file.length()/10 < 1024 * 1024 * 4 ? file.length() / 10 : 1024 * 1024 * 4);
-            byte[] bytes = new byte[length];
-            int lastLength;
+            long endLen = file.length() - start;
+            int lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
+            byte[] bytes = new byte[lastLength];
 
             try(RandomAccessFile raf = new RandomAccessFile(file,"rw")) {
                 int read ;
+                raf.seek(msg.getStartPos());
                 while ((read = raf.read(bytes)) != -1){
                     msg.setEndPos(read);
                     msg.setBytes(bytes);
                     msg.setStartPos(start);
 
                     ChannelFuture channelFuture = channel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
-                        if (!future.isSuccess()) {
+                        if (future.isSuccess()) {
+                            time(msg.getStartPos() + msg.getEndPos(), msg.getFileLen());
+                        }
+                        else{
                             log.debug("Failed to send message.");
+                            return;
                         }
                         Throwable cause = future.cause();
                         if (cause != null) {
@@ -188,8 +196,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
                     start += read;
 
-                    time(start, msg.getFileLen());
-                    lastLength = length > (file.length() - start) ? (int) (file.length() - start) : length;
+                    endLen = file.length() - start;
+                    lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
                     bytes = new byte[lastLength];
                     if(start == file.length() || lastLength == 0){
                         log.debug("发送完毕");

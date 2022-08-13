@@ -1,7 +1,7 @@
 package client.SimpleChannelHandler;
 
 import client.Start;
-import client.normal.saveFile;
+import client.System.saveFile;
 import config.ToMessage;
 import config.execToVerify;
 import io.netty.channel.*;
@@ -160,8 +160,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         String path = file_dir + File.separator + msg.getName();
 
         sum = msg.getSha1sum();
-        msg.setSha1sum(null);
-
 
         File file = new File(path);
         byte[] bytes = msg.getBytes();
@@ -169,17 +167,22 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         try(RandomAccessFile raf = new RandomAccessFile(file,"rw")){
             raf.seek(start);
             raf.write(bytes);
+            msg.setPath(file_dir);
             msg.setStartPos(start);
-            msg.setPath(path);
             start += read;
 //            System.out.println(msg.getTime()+" "+msg.getPath()+" "+msg.getName()+" "+msg.getStartPos());
             executors.execute(()->{
-                saveFile.saveFileStart(msg);
-
+                msg.setBytes(null);
+                saveFile.saveFileStart(msg, msg.getStartPos() == 0);
             });
 
             time(start,msg.getFileLen());
             if(start >= msg.getFileLen()){
+                msg.setStartPos(start);
+                executors.execute(()->{
+                    msg.setBytes(null);
+                    saveFile.saveFileStart(msg, msg.getStartPos() == 0);
+                });
                 Start.semaphore.release();
             }
 
@@ -235,6 +238,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
     private static void time(long start,long fileLength){
         ToMessage cpb = new ToMessage(50, '#');
-        cpb.show((int) (start * 1.00/fileLength *100));
+        cpb.show((int) (start * 1.00/fileLength * 100));
     }
 }

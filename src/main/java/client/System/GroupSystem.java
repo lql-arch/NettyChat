@@ -235,7 +235,7 @@ public class GroupSystem {
 
                         ctx.channel().writeAndFlush(rm);
                         System.out.println("输入“Entry”继续");
-                        System.in.read();
+                        new Scanner(System.in).nextLine();
                         return;
                     default:
                         flag = true;
@@ -310,7 +310,7 @@ public class GroupSystem {
         System.out.println("---------------------------------------------");
 
         System.out.println("按下“Entry”继续");
-        System.in.read();
+        new Scanner(System.in).nextLine();
 
     }
 
@@ -570,13 +570,17 @@ public class GroupSystem {
                     System.out.println("是否修改接收路径（yes/no）(输入“exit”退出)(上次路径："+FileMsgHandler.file_dir+")");
                     String t = new Scanner(System.in).next();
                     if(t.compareToIgnoreCase("exit") == 0){
-                        flag = false;
                         break;
                     }
                     if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                         while(true) {
-                            System.out.println("请设置文件接收地址（绝对地址）：");
-                            FileMsgHandler.file_dir = new Scanner(System.in).nextLine();
+                            System.out.println("请设置文件接收地址（绝对地址）(输入“exit”退出)：");
+                            t = new Scanner(System.in).next();
+                            if(t.compareToIgnoreCase("exit") == 0){
+                                flag = false;
+                                break;
+                            }
+                            FileMsgHandler.file_dir = t;
                             File folder = new File(FileMsgHandler.file_dir);
                             if (!folder.exists() && !folder.isDirectory()) {
                                 System.out.println("地址不存在");
@@ -599,11 +603,12 @@ public class GroupSystem {
                 if(execToVerify.equal(FileMsgHandler.sum,path1)){
                     System.out.println("sha1sum值正确");
                 }else{
-
                     System.out.println("sa1sum值错误，请重试传输，或通知人员修复");
                 }
 
                 break;
+            }else{
+                System.err.println("查无此选项");
             }
         }
     }
@@ -888,7 +893,7 @@ public class GroupSystem {
                 if(choice.compareToIgnoreCase("all") == 0){
                     ctx.writeAndFlush(new GroupStringMessage().setGid(msg.getGid()).setBanned(true).setUid(null));//无uid即禁言全体
                     semaphore.acquire();
-                    continue;
+                    break;
                 }
                 if(isDigit(choice)){
                     System.err.println("输入错误");
@@ -983,8 +988,4 @@ public class GroupSystem {
         System.out.println("----------------------------------------");
     }
 
-    private static void time(long start,long fileLength){
-        ToMessage cpb = new ToMessage(50, '#');
-        cpb.show((int) (start * 1.00/fileLength *100));
-    }
 }

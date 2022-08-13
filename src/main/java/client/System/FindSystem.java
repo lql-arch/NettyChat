@@ -1,22 +1,21 @@
 package client.System;
 
+import client.SimpleChannelHandler.FileMsgHandler;
 import client.SimpleChannelHandler.FindGroupHandler;
 import client.SimpleChannelHandler.FindHistoricalNews;
 import client.Start;
 import client.normal.Chat_record;
+import config.execToVerify;
 import io.netty.channel.ChannelHandlerContext;
-import message.FindGroupMessage;
-import message.HistoricalNews;
-import message.RequestMessage;
-import message.UserMessage;
+import message.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 
 import static client.Start.*;
+import static client.System.ChatSystem.isDigit;
 
 public class FindSystem {
 
@@ -62,7 +61,7 @@ public class FindSystem {
             System.out.println("1.加为好友\t2.返回\t");
             System.out.println("----------------------------------------");
             String choice = new Scanner(System.in).next();
-            if(!ChatSystem.isDigit(choice)){
+            if(!isDigit(choice)){
                 System.err.println("Error:无此选项,请重新输入.");
                 continue;
             }
@@ -71,7 +70,7 @@ public class FindSystem {
                 case 1:
                     if( !uidNameMap.isEmpty() && uidNameMap.get(user.getUid()) != null){
                         System.out.println("你们已是好友(按下“Entry”继续)");
-                        System.in.read();
+                        new Scanner(System.in).nextLine();
                         break;
                     }else {
                         RequestMessage rm = new RequestMessage().setRequestPerson(me).setRecipientPerson(user).setAddOrDelete(true).setFriend(true);
@@ -86,7 +85,7 @@ public class FindSystem {
         }
     }
 
-    public static void myHistoricalNews(ChannelHandlerContext ctx, UserMessage me, UserMessage friend) throws InterruptedException {
+    public static void myHistoricalNews(ChannelHandlerContext ctx, UserMessage friend) throws InterruptedException {
         String date;
         Scanner sc = new Scanner(System.in);
         Timestamp start;
@@ -188,7 +187,6 @@ public class FindSystem {
             return;
         }
 
-        boolean flag = true;
         System.out.println("---------------------------------------------");
         System.out.println("\tgid:"+fgm.getGid());
         System.out.println("\t群名："+fgm.getGroupName());
@@ -226,4 +224,57 @@ public class FindSystem {
         ctx.channel().writeAndFlush(rm);
     }
 
+    public static void fileReplace(ChannelHandlerContext ctx) throws Exception {
+        int count = 1;
+        Map<Integer, FileMessage> countMap = new HashMap<>();
+        Iterator<FileMessage> iterator = fileMessages.listIterator();
+
+        System.out.println("---------------------------------------------");
+        System.out.println("\t\t\t尚未完成的文件传输列表（输入“exit”退出）");
+        System.out.println("---------------------------------------------");
+        while(iterator.hasNext()) {
+            FileMessage fileMessage = iterator.next();
+            countMap.put(count,fileMessage);
+            System.out.printf("\t%d.%s(%.2f",count++,fileMessage.getName(),(fileMessage.getStartPos()*1.00/fileMessage.getFileLen() * 100));
+            System.out.println("%)");
+        }
+        System.out.println("---------------------------------------------");
+
+        while(true) {
+            String str = new Scanner(System.in).nextLine();
+            if(str.compareToIgnoreCase("exit") == 0){
+                return;
+            }
+            if(!isDigit(str)){
+                System.err.println("输入错误");
+                break;
+            }
+            int result = Integer.parseInt(str);
+            if(result > 0 && result < count){
+                FileMessage fm = countMap.get(result);
+                FileMsgHandler.file_dir = fm.getPath();
+                fm.setPath(null);
+
+                String path1 = FileMsgHandler.file_dir + File.separator + fm.getName();
+                String sum = fm.getSha1sum();
+                fm.setSha1sum(null);
+
+                ctx.writeAndFlush(fm.setReadOrWrite(true));
+
+                semaphore.acquire();
+
+                if(execToVerify.equal(sum,path1)){
+                    System.out.println("sha1sum值正确");
+                }else{
+                    System.out.println("sa1sum值错误，请重试接收，或通知人员修复");
+                }
+                fileMessages.remove(fm);
+                System.out.println("(按下“Entry”继续)");
+                new Scanner(System.in).nextLine();
+                return;
+            }else{
+                System.err.println("查无此选项");
+            }
+        }
+    }
 }

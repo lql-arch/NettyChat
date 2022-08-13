@@ -2,6 +2,7 @@ package client;
 
 import client.SimpleChannelHandler.*;
 import client.System.*;
+import client.System.saveFile;
 import config.Decode;
 import config.Encode;
 import config.FrameDecoder;
@@ -33,7 +34,7 @@ public class Start {
     public static AtomicBoolean singleFlag = new AtomicBoolean(false);
     public static Map<String,String> uidNameMap = new HashMap<>();
     public static UserMessage me = new UserMessage();
-
+    public static List<FileMessage> fileMessages ;
 
     public void Begin() throws InterruptedException {
         Bootstrap boot = new Bootstrap();
@@ -257,6 +258,11 @@ public class Start {
         ctx.channel().writeAndFlush(new UserMessage(uid));
         semaphore.acquire();
         me = friend;
+        fileMessages = saveFile.readFile(uid);
+        if(fileMessages != null) {
+            System.out.println("你有未接收完的文件,请前往未读消息的文件查看接收(按下“Entry”继续)");
+            new Scanner(System.in).nextLine();
+        }
         while(true) {
             ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+uid));
             semaphore.acquire();

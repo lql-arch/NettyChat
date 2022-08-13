@@ -114,7 +114,7 @@ public class ChatSystem {
                         SendMessageSystem.sendFileUser(ctx,me,friend);
                         break;
                     case "3":
-                        FindSystem.myHistoricalNews(ctx,me,friend);
+                        FindSystem.myHistoricalNews(ctx, friend);
                         break;
                     case "4":
                         if(DeleteSystem.removeBlackFriend(ctx,me,friend))
@@ -156,7 +156,8 @@ public class ChatSystem {
             System.out.println("--------        3.群通知("+groupRequest+")     \t---------");
             System.out.println("--------        4.群消息("+groupNormal+")      \t---------");
             System.out.println("--------        5.文件信息       \t---------");
-            System.out.println("--------        6.返回           \t---------");
+            System.out.println("--------        6.未完文件接收     \t---------");
+            System.out.println("--------        7.返回           \t---------");
             System.out.println("---------------------------------------------");
             String choice = new Scanner(System.in).nextLine();
             switch (choice) {
@@ -176,6 +177,12 @@ public class ChatSystem {
                     fileMsg(ctx,null,true);
                     break;
                 case "6":
+                    if(fileMessages != null && !fileMessages.isEmpty())
+                        FindSystem.fileReplace(ctx);
+                    else
+                        System.out.println("没有文件等待被接收或传输");
+                    break;
+                case "7":
                     return;
                 default:
                     System.err.println("Error:无此选项,请重新输入.");
