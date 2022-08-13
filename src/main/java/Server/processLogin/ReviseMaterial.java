@@ -182,4 +182,15 @@ public class ReviseMaterial {
 
     }
 
+    public static void reviseGroupFileStatus(FileMessage msg) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        PreparedStatement ps;
+
+        ps = con.prepareStatement("update chat_group.group_file set status = true where gid = ? and sender_uid = ? and file_path = ?");
+        ps.setObject(1,msg.getGid());
+        ps.setObject(2,msg.getUid());
+        ps.setObject(3,msg.getPath());
+        ps.execute();
+    }
+
 }

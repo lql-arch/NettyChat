@@ -669,14 +669,19 @@ public class GroupSystem {
             fm.setPath(file.getPath());
             fm.setSha1sum(execToVerify.sha1Verify(file.getPath()));
             if((read = randomAccessFile.read(bytes)) != -1){
-                fm.setBytes(bytes);
                 fm.setEndPos(read);
                 fm.setGid(msg.getGid());
                 fm.setMyUid(uid);
                 fm.setPerson(false);
+                fm.setReadOrWrite(false);
                 fm.setTime(Timestamp.valueOf(LocalDateTime.now()).toString());
+
+                saveFile.saveFileStart(fm,fm.getStartPos() == 0);
+
+                fm.setBytes(bytes);//byte不写入存储文件
+
                 System.out.println("等待文件发送完毕");
-                ctx.writeAndFlush(fm.setReadOrWrite(false));
+                ctx.writeAndFlush(fm.setFirst(true));
             }
 
         } catch (IOException e) {

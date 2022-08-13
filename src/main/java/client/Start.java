@@ -194,7 +194,7 @@ public class Start {
                             ch.pipeline().addLast(new LoginHandler());
 
                         }
-                    }).connect("192.168.30.100", 8100);
+                    }).connect("192.168.31.16", 8100);//192.168.30.100
 
             channelFuture.sync();
             Channel channel = channelFuture.channel();
@@ -260,7 +260,7 @@ public class Start {
         me = friend;
         fileMessages = saveFile.readFile(uid);
         if(fileMessages != null) {
-            System.out.println("你有未接收完的文件,请前往未读消息的文件查看接收(按下“Entry”继续)");
+            System.out.println("你有未接收完或未传输的文件,请前往未读消息的文件查看接收(按下“Entry”继续)");
             new Scanner(System.in).nextLine();
         }
         while(true) {
@@ -319,12 +319,7 @@ public class Start {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        sun.misc.SignalHandler handler = new sun.misc.SignalHandler() {
-            @Override
-            public void handle(sun.misc.Signal signal) {
-                System.out.println("别ctrl+c了，建议'ps aux' and 'kill'");
-            }
-        };    // 设置INT信号(Ctrl+C中断执行)交给指定的信号处理器处理，废掉系统自带的功能
+        sun.misc.SignalHandler handler = signal -> System.out.println("别ctrl+c了，建议'ps aux' and 'kill'");    // 设置INT信号(Ctrl+C中断执行)交给指定的信号处理器处理，废掉系统自带的功能
         sun.misc.Signal.handle(new sun.misc.Signal("INT"), handler);
 
         new Start().Begin();

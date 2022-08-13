@@ -1,8 +1,8 @@
 package Server.SimpleChannelHandler;
 
-import Server.ChatServer;
 import Server.processLogin.FileTransfer;
 import Server.processLogin.LoadSystem;
+import Server.processLogin.ReviseMaterial;
 import Server.processLogin.Storage;
 import config.ToMessage;
 import config.execToVerify;
@@ -16,9 +16,9 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static Server.ChatServer.uidChannelMap;
@@ -71,8 +71,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             }
             FileTransfer.storeFiles(ctx,msg,file_dir);
         }else{//群文件
-            Channel channel = uidChannelMap.get(msg.getMyUid());
-            if(msg.getStartPos() == 0){//第一次
+            if(msg.isFirst()){//第一次
+                msg.setFirst(false);
                 firstSend(ctx,msg);
             }else{//后面
                 GroupSend(ctx,msg);
@@ -90,7 +90,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
         byte[] bytes = msg.getBytes();
         File file = new File(path);
-        try(RandomAccessFile raf = new RandomAccessFile(file, "rw");){
+        try(RandomAccessFile raf = new RandomAccessFile(file, "rw")){
             raf.seek(start);
             raf.write(bytes);
             start += readLen ;
@@ -117,7 +117,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
         byte[] bytes = msg.getBytes();
         File file = new File(path);
-        try(RandomAccessFile raf = new RandomAccessFile(file, "rw");){
+        try(RandomAccessFile raf = new RandomAccessFile(file, "rw")){
             raf.seek(start);
             raf.write(bytes);
             start += readLen ;
@@ -132,8 +132,10 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                     String str = "sa1sum值错误，请重试传输，或通知人员修复";
                     ctx.writeAndFlush(new ShowMessage().setStr(str).setRequest(false).setUid(msg.getUid()));
                     log.warn(str);
-                }else
+                }else {
+                    ReviseMaterial.reviseGroupFileStatus(msg);
                     log.debug("写入完毕");
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -150,7 +152,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
         }
         msg.setSha1sum(execToVerify.sha1Verify(path));
 
-        EventLoopGroup executors = new DefaultEventLoopGroup(16);
+        EventLoopGroup executors = new DefaultEventLoopGroup();
         executors.execute(() -> {
             log.debug("defaultEventLoopGroup启动");
             long start = msg.getStartPos();

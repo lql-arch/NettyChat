@@ -15,7 +15,7 @@ public class FileRead extends Message{
     private String gid;
     private boolean singleOrGroup;//trueOrFalse
 
-    public FileRead addFilePersonMap(String file,String person){
+    public FileRead addFilePersonMap(String file, String person){
         if(filePersonMap == null){
             filePersonMap = new HashMap<>();
         }

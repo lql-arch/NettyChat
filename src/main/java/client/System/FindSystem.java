@@ -11,7 +11,9 @@ import message.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static client.Start.*;
@@ -236,7 +238,7 @@ public class FindSystem {
             FileMessage fileMessage = iterator.next();
             countMap.put(count,fileMessage);
             System.out.printf("\t%d.%s(%.2f",count++,fileMessage.getName(),(fileMessage.getStartPos()*1.00/fileMessage.getFileLen() * 100));
-            System.out.println("%)");
+            System.out.println("%)("+(fileMessage.isReadOrWrite() ? "待接收)" : "待传输)"));
         }
         System.out.println("---------------------------------------------");
 
@@ -252,21 +254,43 @@ public class FindSystem {
             int result = Integer.parseInt(str);
             if(result > 0 && result < count){
                 FileMessage fm = countMap.get(result);
-                FileMsgHandler.file_dir = fm.getPath();
-                fm.setPath(null);
+                if(fm.isReadOrWrite()) {
+                    FileMsgHandler.file_dir = fm.getPath();
+                    fm.setPath(null);
 
-                String path1 = FileMsgHandler.file_dir + File.separator + fm.getName();
-                String sum = fm.getSha1sum();
-                fm.setSha1sum(null);
+                    String path1 = FileMsgHandler.file_dir + File.separator + fm.getName();
+                    String sum = fm.getSha1sum();
+                    fm.setSha1sum(null);
 
-                ctx.writeAndFlush(fm.setReadOrWrite(true));
+                    ctx.writeAndFlush(fm.setReadOrWrite(true));
 
-                semaphore.acquire();
+                    semaphore.acquire();
 
-                if(execToVerify.equal(sum,path1)){
-                    System.out.println("sha1sum值正确");
+                    if (execToVerify.equal(sum, path1)) {
+                        System.out.println("sha1sum值正确");
+                    } else {
+                        System.out.println("sa1sum值错误，请重试接收，或通知人员修复");
+                    }
                 }else{
-                    System.out.println("sa1sum值错误，请重试接收，或通知人员修复");
+                    File file = new File(fm.getPath());
+                    try(RandomAccessFile randomAccessFile = new RandomAccessFile(file,"r")) {
+                        randomAccessFile.seek(fm.getStartPos());
+                        int length = (int) ((file.length() / 10) < 1024*1024*2 ? (file.length() / 10) : 1024*1024*2);
+                        long endLen = file.length() - fm.getStartPos();
+                        int lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
+                        byte[] bytes = new byte[lastLength];
+                        int read;
+                        if((read = randomAccessFile.read(bytes)) != -1){
+                            fm.setBytes(bytes);
+                            fm.setEndPos(read);
+                            System.out.println("等待文件发送完毕");
+                            ctx.writeAndFlush(fm.setFirst(true));
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    semaphore.acquire();
                 }
                 fileMessages.remove(fm);
                 System.out.println("(按下“Entry”继续)");

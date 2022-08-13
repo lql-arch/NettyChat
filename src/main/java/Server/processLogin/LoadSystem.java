@@ -29,7 +29,7 @@ public class LoadSystem{
         Map<String, Boolean> black = new HashMap<>();
         int hasRequest = 0;//0:无消息，1：只有聊天消息，2：只有申请，3：有聊天和申请
 
-        Date time = null;
+        Date time;
         String gander;
         int age;
         String name;

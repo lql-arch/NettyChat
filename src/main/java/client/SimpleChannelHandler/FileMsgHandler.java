@@ -141,14 +141,14 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             }
         }else{//group
             if(msg.isReadOrWrite()){
-                receiveGroupFiles(ctx, msg);
+                receiveGroupFiles(msg);
             }else{
                 sendGroupFile(ctx, msg);
             }
         }
     }
 
-    public static void receiveGroupFiles(ChannelHandlerContext ctx, FileMessage msg){
+    public static void receiveGroupFiles(FileMessage msg){
         if(msg.getPath() == null || msg.getName() == null){
             System.err.println("查无此文件");
             Start.semaphore.release();
@@ -170,7 +170,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             msg.setPath(file_dir);
             msg.setStartPos(start);
             start += read;
-//            System.out.println(msg.getTime()+" "+msg.getPath()+" "+msg.getName()+" "+msg.getStartPos());
+
             executors.execute(()->{
                 msg.setBytes(null);
                 saveFile.saveFileStart(msg, msg.getStartPos() == 0);
@@ -195,8 +195,6 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
 
         AtomicLong start = new AtomicLong(msg.getStartPos());
 
-
-
         File file = new File(msg.getPath());
         try(RandomAccessFile raf = new RandomAccessFile(file,"rw")){
             raf.seek(start.get());
@@ -213,8 +211,16 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 if(start.get() + read == file.length()){
                     msg.setSha1sum(execToVerify.sha1Verify(file.getPath()));
                 }
+                msg.setPath(null);
                 ChannelFuture channelFuture = ctx.channel().writeAndFlush(msg);
                 channelFuture.awaitUninterruptibly(1, TimeUnit.SECONDS);
+
+                FileMessage fm = FileMessage.clone(msg);
+                fm.setPath(file.getPath());
+                EventLoopGroup executors = new DefaultEventLoopGroup();
+                executors.execute(()->{
+                    saveFile.saveFileStart(fm, fm.getStartPos() == 0);
+                });
 
                 start.compareAndSet(start.get(), start.get() + read);
                 time(start.get(),file.length());//显示进度条
@@ -222,14 +228,15 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
                 bytes = new byte[lastLength];
                 if(start.get() == file.length() ){
+                    msg.setStartPos(start.get());
+                    msg.setPath(file.getPath());
+                    saveFile.saveFileStart(msg, msg.getStartPos() == 0);
                     System.out.println("发送完毕");
                     break;
                 }
             }
-        }catch (IOException e){
+        } catch (Exception e){
             e.printStackTrace();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
 
         Start.semaphore.release();

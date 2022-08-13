@@ -28,7 +28,16 @@ public class FileMessage extends Message{
     private boolean readOrWrite;//true = read , false = write
 
     private String sha1sum;
+    private boolean First;
 
+    public boolean isFirst() {
+        return First;
+    }
+
+    public FileMessage setFirst(boolean first) {
+        First = first;
+        return this;
+    }
 
     public FileMessage setDeleteFile(boolean deleteFile){
         this.deleteFile = deleteFile;
@@ -61,19 +70,24 @@ public class FileMessage extends Message{
 
     public static FileMessage clone(FileMessage lgm){
         FileMessage msg = new FileMessage();
-        msg.name = lgm.getName();
-        msg.path = lgm.getPath();
-        msg.fileLen = lgm.getFileLen();
-        msg.person = lgm.isPerson();
-        msg.time = lgm.getTime();
+        msg.name = lgm.name;
+        msg.path = lgm.path;
+        msg.fileLen = lgm.fileLen;
+        msg.person = lgm.person;
+        msg.time = lgm.time;
+        msg.startPos = lgm.startPos;
+        msg.endPos = lgm.endPos;
+        msg.bytes = null;
         //单人文件
-        msg.user = lgm.getUser();
-        msg.me = lgm.getMe();
+        msg.user = lgm.user;
+        msg.me = lgm.me;
         //群文件
-        msg.gid = lgm.getGid();
-        msg.uid = lgm.getUid();
-        msg.myUid = lgm.getMyUid();
-        msg.deleteFile = lgm.isDeleteFile();
+        msg.gid = lgm.gid;
+        msg.uid = lgm.uid;
+        msg.myUid = lgm.myUid;
+        msg.deleteFile = lgm.deleteFile;
+        msg.readOrWrite = lgm.readOrWrite;
+        msg.sha1sum = lgm.sha1sum;
         return msg;
     }
 

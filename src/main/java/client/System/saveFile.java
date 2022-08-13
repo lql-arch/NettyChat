@@ -2,6 +2,8 @@ package client.System;
 
 import config.Json;
 import message.FileMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -10,6 +12,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class saveFile {//client断点续传接收点
+    private static final Logger log = LogManager.getLogger();
     private final static String Username = System.getProperty("user.name");
     private final static String dir = "/home/"+Username+"/bronyaNettyChatFiles/GroupBreakPointResumeSaveDirectory.txt";
 
@@ -39,6 +42,7 @@ public class saveFile {//client断点续传接收点
         File saveFile;
         try {
             saveFile = createFile(dir);
+            msg.setBytes(null);
             if(isFirst) {
                 try(BufferedWriter out = new BufferedWriter(new FileWriter(saveFile, true))){
                     String save = Json.pojoToJson(msg);
@@ -52,7 +56,13 @@ public class saveFile {//client断点续传接收点
                     String line;
                     while((line = in.readLine()) != null){
                         FileMessage fm = Json.jsonToPojo(line,FileMessage.class);
-                        if(fm.getPath().equals(msg.getPath()) && fm.getMyUid().equals(msg.getMyUid()) && fm.getGid().equals(msg.getGid()) && fm.getStartPos() < fm.getFileLen()) {
+                        if(fm.getPath().equals(msg.getPath()) && fm.getMyUid().equals(msg.getMyUid()) && fm.getGid().equals(msg.getGid()) && msg.isReadOrWrite() && fm.getStartPos() < fm.getFileLen()) {
+                            String src = "\"startPos\":" + fm.getStartPos();
+                            String replace = "\"startPos\":" + msg.getStartPos();
+                            // 替换符合条件的字符串
+                            line = line.replaceAll(src, replace);
+                        }
+                        if(!msg.isReadOrWrite() && fm.getPath().equals(msg.getPath()) && fm.getMyUid().equals(msg.getMyUid()) && fm.getGid().equals(msg.getGid()) &&  fm.getStartPos() < fm.getFileLen()){
                             String src = "\"startPos\":" + fm.getStartPos();
                             String replace = "\"startPos\":" + msg.getStartPos();
                             // 替换符合条件的字符串
