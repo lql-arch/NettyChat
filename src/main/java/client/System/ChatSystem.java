@@ -146,10 +146,10 @@ public class ChatSystem {
             semaphore.acquire();
             ctx.writeAndFlush(new LoginStringMessage("group!"+uid));
             semaphore.acquire();
-            String normal = (load.getHasRequest() != 0 && load.getHasRequest() != 2) ? "new" : " " ;
-            String Request = (load.getHasRequest() != 0 && load.getHasRequest() != 1) ? "new" : " " ;
-            String groupNormal = (groupLoad.getHasRequest() != 0 && groupLoad.getHasRequest() != 2 && groupLoad.getHasRequest() != 4 && groupLoad.getHasRequest() != 5) ? "new" : " " ;
-            String groupRequest = (groupLoad.getHasRequest() != 0 && groupLoad.getHasRequest() != 1 ) ? "new" : " " ;
+            String normal = (load.getHasRequest() != 0 && load.getHasRequest() != 2) ? "new" : "0" ;
+            String Request = (load.getHasRequest() != 0 && load.getHasRequest() != 1) ? "new" : "0" ;
+            String groupNormal = (groupLoad.getHasRequest() != 0 && groupLoad.getHasRequest() != 2 && groupLoad.getHasRequest() != 4 && groupLoad.getHasRequest() != 5) ? "new" : "0" ;
+            String groupRequest = (groupLoad.getHasRequest() != 0 && groupLoad.getHasRequest() != 1 ) ? "new" : "0" ;
             System.out.println("---------------------------------------------");
             System.out.println("--------        1.好友消息("+normal+")      \t---------");
             System.out.println("--------        2.好友申请消息("+Request+")  \t---------");

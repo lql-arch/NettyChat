@@ -711,13 +711,13 @@ public class GroupSystem {
             for (String aUid : msg.getAdministrator()) {
                 String name = msg.getUidNameMap().get(aUid);
                 countMap.put(count, aUid);
-                System.out.printf("\t%d.%20s(%6s)\n", count++, name,msg.getUidBanned().get(aUid) ? "已禁言" : "未禁言");
+                System.out.printf("\t%d.%20s(%3s)\n", count++, name,msg.getUidBanned().get(aUid) ? "已禁言" : "未禁言");
             }
             System.out.println("\t群员:");
             for (String mUid : msg.getMembers()) {
                 String name = msg.getUidNameMap().get(mUid);
                 countMap.put(count, mUid);
-                System.out.printf("\t%d.%20s(%6s)\n", count++, name,msg.getUidBanned().get(mUid) ? "已禁言" : "未禁言");
+                System.out.printf("\t%d.%20s(%3s)\n", count++, name,msg.getUidBanned().get(mUid) ? "已禁言" : "未禁言");
             }
 
             while (true) {
