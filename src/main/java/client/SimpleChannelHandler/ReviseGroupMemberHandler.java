@@ -11,7 +11,10 @@ public class ReviseGroupMemberHandler extends SimpleChannelInboundHandler<Revise
         if(msg.isRemoveGroup() ){
             System.out.println("移除成功");
         }else if(msg.isSetManage()){
-            System.out.println("已成功设置成管理");
+            if(msg.isRemoveAdm())
+                System.out.println("移除管理成功");
+            else
+                System.out.println("已成功设置成管理");
         }else if(msg.isDisbandGroupChat()){
             System.out.println("已成功解散该群.");
         }

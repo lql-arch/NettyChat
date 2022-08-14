@@ -18,6 +18,7 @@ public class GroupStringHandler extends SimpleChannelInboundHandler<GroupStringM
         if(msg.isBanned()){
             System.out.println("禁言设置完成");
             Start.semaphore.release();
+            return;
         }
 
         if(GroupSystem.groupChat.get()){

@@ -11,6 +11,16 @@ public class ReviseGroupMemberMessage extends Message{
     private boolean setManage;//设置uid为管理
     private boolean removeGroup;//将uid移除群聊
     private boolean disbandGroupChat;//解散群聊
+    private boolean removeAdm;
+
+    public boolean isRemoveAdm() {
+        return removeAdm;
+    }
+
+    public ReviseGroupMemberMessage setRemoveAdm(boolean removeAdm) {
+        this.removeAdm = removeAdm;
+        return this;
+    }
 
     public String getManageUid() {
         return manageUid;

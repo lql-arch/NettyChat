@@ -127,8 +127,13 @@ public class ReviseMaterial {
         Connection con = DbUtil.getDb().getConn();
         PreparedStatement ps;
 
-        ps = con.prepareStatement("update chat_group.group_user set administrator = true where uid = ? and gid = ?;");
-        ps.setObject(1,msg.getUid());
+        log.debug("adm:"+msg.getUid());
+        if(msg.isRemoveAdm()) {
+            ps = con.prepareStatement("update chat_group.group_user set administrator = false where uid = ? and gid = ?;");
+        }else{
+            ps = con.prepareStatement("update chat_group.group_user set administrator = true where uid = ? and gid = ?;");
+        }
+        ps.setObject(1, msg.getUid());
         ps.setObject(2, msg.getGid());
 
         ps.execute();
