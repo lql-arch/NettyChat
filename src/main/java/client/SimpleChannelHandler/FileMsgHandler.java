@@ -214,7 +214,12 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 msg.setPath(null);
                 FileMessage FM = FileMessage.clone(msg);
                 FM.setBytes(bytes);
-                ChannelFuture channelFuture = ctx.channel().writeAndFlush(FM);
+                ChannelFuture channelFuture = ctx.channel().writeAndFlush(FM)
+                        .addListener((ChannelFutureListener) future->{
+                    if (future.isSuccess()) {
+                        time(FM.getStartPos() + FM.getEndPos(), FM.getFileLen());
+                    }
+                });
 //                channelFuture.awaitUninterruptibly(10, TimeUnit.SECONDS);
 
                 FileMessage fm = FileMessage.clone(msg);
@@ -225,7 +230,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 });
 
                 start.compareAndSet(start.get(), start.get() + read);
-                time(start.get(),file.length());//显示进度条
+//                time(start.get(),file.length());//显示进度条
                 endLen = file.length() - start.get();
                 lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
                 bytes = new byte[lastLength];

@@ -170,9 +170,7 @@ public class GroupSystem {
         while(true) {
             ctx.channel().writeAndFlush(lgm);
             Start.semaphore.acquire();
-            LoadGroupMessage msg = LoadGroupNewsHandler.groupMessage;
-            lgm.setGroupMessages(msg.getGroupMessages());
-            lgm.setMasterName(msg.getMasterName());
+            lgm = LoadGroupNewsHandler.groupMessage;
 
             boolean flag = true;
             System.out.println("---------------------------------------------");

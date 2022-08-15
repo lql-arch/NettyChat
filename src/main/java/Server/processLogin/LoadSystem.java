@@ -476,6 +476,10 @@ public class LoadSystem{
                 uidNameMap.put(t,rs.getString("name"));
             }
         }
+
+//        for (Map.Entry<String, String> person : uidNameMap.entrySet()) {
+//            log.debug(person.getKey()+" "+person.getValue());
+//        }
         
         ps = con.prepareStatement("select last_msg_id from chat_group.group_user where gid = ? and uid = ?");
         ps.setObject(1,msg.getGid());
