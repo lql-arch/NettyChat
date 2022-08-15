@@ -3,6 +3,7 @@ package client.System;
 import client.Start;
 import io.netty.channel.ChannelHandlerContext;
 import message.FindMessage;
+import message.LoginStringMessage;
 import message.ReviseMessage;
 import message.UserMessage;
 
@@ -79,7 +80,7 @@ public class MaterialSystem {
                 continue;
             }
             ctx.channel().writeAndFlush(new FindMessage(uid, oldPassword));
-            Start.semaphore.acquire();
+            DeleteSystem.semaphoreFriend.acquire();
             if (Start.EnterPassword.get()){
                 break;
             }else{
@@ -108,7 +109,7 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,null,newPassword,null));
-                Start.semaphore.acquire();
+                DeleteSystem.semaphoreFriend.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 System.out.println("已取消");
@@ -142,8 +143,8 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,name,null,null));
-                Start.semaphore.acquire();
-                break;
+                DeleteSystem.semaphoreFriend.acquire();
+                return;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 break;
             }
@@ -167,7 +168,7 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,null,null,gander));
-                Start.semaphore.acquire();
+                DeleteSystem.semaphoreFriend.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 return;
@@ -197,7 +198,7 @@ public class MaterialSystem {
             String t = sc.nextLine();
             if(t.compareToIgnoreCase("yes") == 0 || t.compareToIgnoreCase("y") == 0){
                 ctx.channel().writeAndFlush(new ReviseMessage(uid,age));
-                Start.semaphore.acquire();
+                DeleteSystem.semaphoreFriend.acquire();
                 break;
             }else if(t.compareToIgnoreCase("no") == 0 || t.compareToIgnoreCase("n") == 0){
                 break;
@@ -207,6 +208,9 @@ public class MaterialSystem {
 
     public static void blacklist( ChannelHandlerContext ctx) throws InterruptedException {
         while(true) {
+            ctx.channel().writeAndFlush(new LoginStringMessage("flush!"+Start.uid));
+            Start.semaphore.acquire();
+
             List<String> blacklist = new ArrayList<>();
             for(String friend_uid : load.getFriends()){
                 if(load.getBlacklist().get(friend_uid)){
@@ -245,7 +249,6 @@ public class MaterialSystem {
                     }else{
                         blacklistSystem(ctx,name_uid);
                     }
-
                     break;
                 }
             }

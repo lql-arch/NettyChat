@@ -250,8 +250,8 @@ public class GroupSystem {
         boolean flag = true;
         ctx.writeAndFlush(new LoginStringMessage("group!"+uid));
         semaphore.acquire();
-        String notice = groupLoad.getHasRequest() >= 4 ? "new" : " ";
-        String request = (groupLoad.getHasRequest() == 2 || groupLoad.getHasRequest() ==3 || groupLoad.getHasRequest() == 5 || groupLoad.getHasRequest() == 7) ? "new" : " ";
+        String notice = groupLoad.getHasRequest() >= 4 ? "new" : "0";
+        String request = (groupLoad.getHasRequest() == 2 || groupLoad.getHasRequest() ==3 || groupLoad.getHasRequest() == 5 || groupLoad.getHasRequest() == 7) ? "new" : "0";
         System.out.println("---------------------------------------------");
         System.out.println("\t\t\t1.群通知("+notice+")");
         System.out.println("\t\t\t2.群申请("+request+")");

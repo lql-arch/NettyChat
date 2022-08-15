@@ -307,7 +307,13 @@ public class LoadSystem{
 
         List<Chat_group> chat_groups = new ArrayList<>();
         int messages = 0;
-        int hasRequest = 0;
+        /*
+          0:无消息，
+          1：只有聊天消息，2：只有申请，3：有聊天和申请 ,
+          group:4:有通知，5：有通知和申请 ，
+          6：有聊天和通知 7:有聊天，通知，申请
+        */
+         int hasRequest = 0;
 
         ps = con.prepareStatement("select gid,last_msg_id from chat_group.group_user where uid = ? ");
         ps.setObject(1,uid);
@@ -325,40 +331,67 @@ public class LoadSystem{
             ResultSet rs1 = ps.executeQuery();
             if(rs1.next()) {
                 boolean isRemoved = rs1.getBoolean("isRemoved");
-                if(isRemoved){
-                    continue;
+                if(!isRemoved){
+                    group.setGroupName(rs1.getString("group_name"));
+                    group.setTime(rs1.getTimestamp("create_time"));
+                    group.setMembersNum(rs1.getInt("members_num"));
                 }
-                group.setGroupName(rs1.getString("group_name"));
-                group.setTime(rs1.getTimestamp("create_time"));
-                group.setMembersNum(rs1.getInt("members_num"));
             }
 
             //获取群聊消息(unread限制没写)
-            ps = con.prepareStatement("SELECT DISTINCT uid,text,time from chat_group.group_msg where gid = ? and time > ? and isNotice = false order by id");
+            ps = con.prepareStatement("SELECT DISTINCT uid from chat_group.group_msg where gid = ? and time > ? and isNotice = false order by id");
             ps.setObject(1,gid);
             ps.setObject(2,lastTime);
             rs1 = ps.executeQuery();
             if(rs1.next()) {//先读取时，读取是否有消息，进入群聊后在详细读取
                 messages++;
                 group.setMessage(1);//有消息
-                hasRequest = 1;
+                if(hasRequest == 0)
+                    hasRequest = 1;
+                else if(hasRequest == 2){
+                    hasRequest = 3;
+                }else if(hasRequest == 4){
+                    hasRequest = 6;
+                }else if(hasRequest == 5){
+                    hasRequest = 7;
+                }
             }
 
 
-            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and isNotice = true and isRequest = false order by id");
+            ps = con.prepareStatement("select uid from chat_group.group_msg where gid = ? and isNotice = true and isRequest = false order by id");
             ps.setObject(1,gid);
             rs1 = ps.executeQuery();
             if(rs1.next()) {//通知
-                hasRequest = hasRequest == 1 ? 6 : 4 ;
+                //hasRequest = hasRequest == 1 ? 6 : 4 ;
+                if(hasRequest == 0){
+                    hasRequest = 4;
+                }else if(hasRequest == 1){
+                    hasRequest = 6;
+                }else if(hasRequest == 2){
+                    hasRequest = 5;
+                }else if(hasRequest == 3){
+                    hasRequest = 7;
+                }
             }
 
-            ps = con.prepareStatement("select uid,text,time from chat_group.group_msg where gid = ? and isNotice = true and isRequest = true order by id");
+            ps = con.prepareStatement("select uid from chat_group.group_msg where gid = ? and isNotice = true and isRequest = true order by id");
             ps.setObject(1,gid);
             rs1 = ps.executeQuery();
             if(rs1.next()) {//申请
                 messages++;
-                hasRequest = hasRequest == 1 ? 3 : (hasRequest == 6 ? 7 : 5);
+                //hasRequest = hasRequest == 1 ? 3 : (hasRequest == 6 ? 7 : 5);
+                if(hasRequest == 0){
+                    hasRequest = 2;
+                } else if (hasRequest == 1) {
+                    hasRequest = 3;
+                } else if (hasRequest == 4) {
+                    hasRequest = 5;
+                } else if (hasRequest == 6) {
+                    hasRequest = 7;
+                }
             }
+
+
 
             ps = con.prepareStatement("select administrator,group_master,uid from chat_group.group_user where gid = ?");
             ps.setObject(1,gid);
