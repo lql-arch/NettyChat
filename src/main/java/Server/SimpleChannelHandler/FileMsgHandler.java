@@ -178,13 +178,15 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                 raf.seek(msg.getStartPos());
                 while ((read = raf.read(bytes)) != -1){
                     msg.setEndPos(read);
-                    msg.setBytes(bytes);
+//                    msg.setBytes(bytes);
                     msg.setStartPos(start);
 
-                    ChannelFuture channelFuture = channel.writeAndFlush(msg)
+                    FileMessage fm = FileMessage.clone(msg);
+                    fm.setBytes(bytes);
+                    ChannelFuture channelFuture = channel.writeAndFlush(fm)
                             .addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
-                            time(msg.getStartPos() + msg.getEndPos(), msg.getFileLen());
+                            time(fm.getStartPos() + fm.getEndPos(), fm.getFileLen());
                         }
                         else{
                             log.debug("Failed to send message.");
@@ -195,7 +197,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                             log.warn(cause);
                         }
                     });
-                    channelFuture.awaitUninterruptibly(1,TimeUnit.SECONDS);
+//                    channelFuture.awaitUninterruptibly(10,TimeUnit.SECONDS);
 
                     start += read;
 
@@ -203,7 +205,7 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                     lastLength = length < endLen ? length : ( endLen > 0 ? (int)endLen : 0);
                     bytes = new byte[lastLength];
                     if(start == file.length() || lastLength == 0){
-                        log.debug("发送完毕");
+//                        log.debug("发送完毕");
                         break;
                     }
                 }

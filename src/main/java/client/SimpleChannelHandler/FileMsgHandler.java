@@ -207,13 +207,15 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
             while((read = raf.read(bytes)) != -1){
                 msg.setStartPos(start.get());
                 msg.setEndPos(read);
-                msg.setBytes(bytes);
+//                msg.setBytes(bytes);
                 if(start.get() + read == file.length()){
                     msg.setSha1sum(execToVerify.sha1Verify(file.getPath()));
                 }
                 msg.setPath(null);
-                ChannelFuture channelFuture = ctx.channel().writeAndFlush(msg);
-                channelFuture.awaitUninterruptibly(1, TimeUnit.SECONDS);
+                FileMessage FM = FileMessage.clone(msg);
+                FM.setBytes(bytes);
+                ChannelFuture channelFuture = ctx.channel().writeAndFlush(FM);
+//                channelFuture.awaitUninterruptibly(10, TimeUnit.SECONDS);
 
                 FileMessage fm = FileMessage.clone(msg);
                 fm.setPath(file.getPath());

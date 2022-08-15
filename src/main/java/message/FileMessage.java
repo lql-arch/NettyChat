@@ -88,6 +88,7 @@ public class FileMessage extends Message{
         msg.deleteFile = lgm.deleteFile;
         msg.readOrWrite = lgm.readOrWrite;
         msg.sha1sum = lgm.sha1sum;
+        msg.First = lgm.First;
         return msg;
     }
 

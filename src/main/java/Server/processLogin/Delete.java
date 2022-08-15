@@ -146,7 +146,6 @@ public class Delete {
             return;
         }
 
-        rs.last();
 
         //检查是否有其他地方使用相同文件
         ps = conn.prepareStatement("select file_name from chat_group.group_file where file_path = ? and gid != ?");
@@ -180,7 +179,6 @@ public class Delete {
             }
         }
 
-        rs.last();
 
         ps = conn.prepareStatement("delete from chat_group.group_file where gid = ? and file_path = ? and sender_uid = ? and time = ?;");
         ps.setObject(1, msg.getGid());

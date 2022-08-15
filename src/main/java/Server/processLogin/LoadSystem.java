@@ -326,11 +326,13 @@ public class LoadSystem{
             group.setLast_msg_time(lastTime.toString());
             group.setGid(gid);
 
+            boolean isRemoved = false;
+
             ps = con.prepareStatement("select group_name,create_time,members_num,isRemoved from chat_group.`group` where gid = ?");
             ps.setObject(1,gid);
             ResultSet rs1 = ps.executeQuery();
             if(rs1.next()) {
-                boolean isRemoved = rs1.getBoolean("isRemoved");
+                isRemoved = rs1.getBoolean("isRemoved");
                 if(!isRemoved){
                     group.setGroupName(rs1.getString("group_name"));
                     group.setTime(rs1.getTimestamp("create_time"));
@@ -391,7 +393,9 @@ public class LoadSystem{
                 }
             }
 
-
+            if(isRemoved){
+                continue;
+            }
 
             ps = con.prepareStatement("select administrator,group_master,uid from chat_group.group_user where gid = ?");
             ps.setObject(1,gid);
