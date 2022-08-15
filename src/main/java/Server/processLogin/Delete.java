@@ -1,6 +1,8 @@
 package Server.processLogin;
 
+import Server.ChatServer;
 import config.DbUtil;
+import io.netty.channel.Channel;
 import message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,43 +47,34 @@ public class Delete {
 
     public static List<String> DeleteGroup(ReviseGroupMemberMessage msg) throws SQLException {
         Connection conn = DbUtil.getDb().getConn();
-        PreparedStatement ps;
-        ResultSet rs;
         List<String> members = new ArrayList<>();
         List<String> deleteFile = new ArrayList<>();
+        String groupName = "";
 
-        ps = conn.prepareStatement("select uid from chat_group.group_user where gid = ?;");
+        PreparedStatement ps = conn.prepareStatement("select uid from chat_group.group_user where gid = ?;");
         ps.setObject(1,msg.getGid());
-        rs = ps.executeQuery();
-        while(rs.next()){
-            members.add(rs.getString("uid"));
+        ResultSet rs1 = ps.executeQuery();
+        while(rs1.next()){
+            members.add(rs1.getString("uid"));
         }
 
-        ps = conn.prepareStatement("delete from chat_group.group_user where gid = ?");
-        ps.setObject(1,msg.getGid());
-        ps.execute();
-
-        ps = conn.prepareStatement("delete from  chat_group.group_msg where gid = ?");
-        ps.setObject(1,msg.getGid());
-        ps.execute();
-
-        ps = conn.prepareStatement("select file_path from chat_group.group_file where gid = ?;");
-        ps.setObject(1,msg.getGid());
-        rs = ps.executeQuery();
+        PreparedStatement ps1 = conn.prepareStatement("select file_path from chat_group.group_file where gid = ?;");
+        ps1.setObject(1,msg.getGid());
+        ResultSet rs = ps1.executeQuery();
         while(rs.next()){
             //检查是否有其他地方使用相同文件
             String path = rs.getString("file_path");
 
-            PreparedStatement ps1 = conn.prepareStatement("select file_name from chat_group.group_file where file_path = ? and gid != ?");
-            ps1.setObject(1,path);
-            ps1.setObject(2,msg.getGid());
-            if(!ps.executeQuery().next()){
-                ps1 = conn.prepareStatement("select file_name from members.store_file where file_path = ?");
-                ps1.setObject(1,path);
-                if(ps.executeQuery().next()){
-                   continue;
-                }else{
+            PreparedStatement ps2 = conn.prepareStatement("select file_name from chat_group.group_file where file_path = ? and gid != ?");
+            ps2.setObject(1,path);
+            ps2.setObject(2,msg.getGid());
+            if(!ps2.executeQuery().next()){
+                PreparedStatement pr2 = conn.prepareStatement("select file_name from members.store_file where file_path = ?");
+                pr2.setObject(1,path);
+                if(!pr2.executeQuery().next()){
                     deleteFile.add(path);
+                }else{
+                    continue;
                 }
             }else {
                 continue;
@@ -103,15 +96,30 @@ public class Delete {
         }
 
         for (String path : deleteFile) {
-            ps = conn.prepareStatement("delete from chat_group.group_file where gid = ? and file_path = ?");
-            ps.setObject(1, msg.getGid());
-            ps.setObject(2,path);
-            ps.execute();
+            PreparedStatement ps3 = conn.prepareStatement("delete from chat_group.group_file where gid = ? and file_path = ?");
+            ps3.setObject(1, msg.getGid());
+            ps3.setObject(2,path);
+            ps3.execute();
         }
 
-        ps = conn.prepareStatement("update chat_group.`group` set isRemoved = true where gid = ?");
-        ps.setObject(1,msg.getGid());
-        ps.execute();
+//        PreparedStatement pr = conn.prepareStatement("delete from chat_group.group_user where gid = ?");
+//        pr.setObject(1,msg.getGid());
+//        pr.execute();
+
+        PreparedStatement pr1 = conn.prepareStatement("delete from chat_group.group_msg where gid = ?");
+        pr1.setObject(1,msg.getGid());
+        pr1.execute();
+
+        PreparedStatement ps5 = conn.prepareStatement("select group_name from chat_group.`group` where gid = ?");
+        ps5.setObject(1,msg.getGid());
+        ResultSet resultSet = ps5.executeQuery();
+        while (resultSet.next()){
+            groupName = resultSet.getString("group_name");
+        }
+
+        PreparedStatement ps4 = conn.prepareStatement("update chat_group.`group` set isRemoved = true where gid = ?");
+        ps4.setObject(1,msg.getGid());
+        ps4.execute();
 
 
         return members;
@@ -137,6 +145,8 @@ public class Delete {
             msg.setPath(null);//表示没有此文件
             return;
         }
+
+        rs.last();
 
         //检查是否有其他地方使用相同文件
         ps = conn.prepareStatement("select file_name from chat_group.group_file where file_path = ? and gid != ?");
@@ -170,6 +180,7 @@ public class Delete {
             }
         }
 
+        rs.last();
 
         ps = conn.prepareStatement("delete from chat_group.group_file where gid = ? and file_path = ? and sender_uid = ? and time = ?;");
         ps.setObject(1, msg.getGid());
@@ -226,8 +237,19 @@ public class Delete {
         ps.setObject(1,msg.getUid());
         ResultSet rs = ps.executeQuery();
         while(rs.next()){
-            if(rs.getBoolean("group_master"))
-                DeleteGroup(new ReviseGroupMemberMessage().setGid(rs.getString("gid")));
+            if(rs.getBoolean("group_master")) {
+                String gid = rs.getString("gid");
+                ReviseGroupMemberMessage rvm = new ReviseGroupMemberMessage().setGid(gid).setUid(msg.getUid());
+                String name = Verify.verifyGroupName(gid);
+                List<String> members = DeleteGroup(rvm);
+                String notice = msg.getUid() + "注销了帐号,并解散了群聊" + name+"("+gid+")";
+                Storage.storageGroupNotice(rvm,notice,0);
+                for(String member : members){
+                    Channel channel = ChatServer.uidChannelMap.get(member);
+                    if(channel != null)
+                        channel.writeAndFlush(new ShowMessage().setRequest(false).setStr(notice));
+                }
+            }
             else
                 deleteGroupMember(new RequestMessage().setGid(rs.getString("gid")).setRequestPerson(new UserMessage(msg.getUid())));
         }

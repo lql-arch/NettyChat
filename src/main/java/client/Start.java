@@ -194,7 +194,7 @@ public class Start {
                             ch.pipeline().addLast(new LoginHandler());
 
                         }
-                    }).connect("192.168.31.16", 8100);//192.168.30.100
+                    }).connect("192.168.30.100", 8100);
 
             channelFuture.sync();
             Channel channel = channelFuture.channel();

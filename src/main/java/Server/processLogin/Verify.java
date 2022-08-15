@@ -113,4 +113,18 @@ public class Verify {
 
         return result;
     }
+
+    public static String verifyGroupName(String gid) throws SQLException {
+        Connection con = DbUtil.getDb().getConn();
+        String name = null;
+
+        PreparedStatement ps = con.prepareStatement("select group_name from chat_group.`group` where gid = ?");
+        ps.setObject(1,gid);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()){
+            name = rs.getString("group_name");
+        }
+
+        return name == null ? gid : name;
+    }
 }

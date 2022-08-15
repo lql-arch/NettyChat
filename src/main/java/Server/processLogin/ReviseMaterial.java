@@ -30,7 +30,19 @@ public class ReviseMaterial {
         PreparedStatement ps = con.prepareStatement("update members.user set name = ? where uid = ?");
         ps.setObject(1,msg.getName());
         ps.setObject(2,msg.getUid());
+
         boolean result = ps.execute();
+
+        PreparedStatement pre= con.prepareStatement("update members.friends set first = ? where first_uid = ?");
+        pre.setObject(1,msg.getName());
+        pre.setObject(2,msg.getUid());
+        pre.execute();
+
+        PreparedStatement prepareStatement= con.prepareStatement("update members.friends set second = ? where second_uid = ?");
+        prepareStatement.setObject(1,msg.getName());
+        prepareStatement.setObject(2,msg.getUid());
+        prepareStatement.execute();
+
         return !result;
     }
 

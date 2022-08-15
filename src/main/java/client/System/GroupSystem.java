@@ -780,6 +780,7 @@ public class GroupSystem {
             }
             if (!isDigit(choice)) {
                 System.err.println("输入错误");
+                continue;
             }
             result = Integer.parseInt(choice);
             if(type == 1)

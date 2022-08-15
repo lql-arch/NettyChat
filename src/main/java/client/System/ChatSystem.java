@@ -74,7 +74,7 @@ public class ChatSystem {
 
     public static boolean isDigit(String str){
         try{
-            Integer.valueOf(str);
+            Integer.parseInt(str);
             return true;
         }catch (Exception e){
             return false;

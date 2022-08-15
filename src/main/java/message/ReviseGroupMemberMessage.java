@@ -34,8 +34,9 @@ public class ReviseGroupMemberMessage extends Message{
         return uid;
     }
 
-    public void setUid(String uid) {
+    public ReviseGroupMemberMessage setUid(String uid) {
         this.uid = uid;
+        return this;
     }
 
     public String getGid() {

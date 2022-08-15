@@ -181,7 +181,8 @@ public class FileMsgHandler extends SimpleChannelInboundHandler<FileMessage> {
                     msg.setBytes(bytes);
                     msg.setStartPos(start);
 
-                    ChannelFuture channelFuture = channel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
+                    ChannelFuture channelFuture = channel.writeAndFlush(msg)
+                            .addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
                             time(msg.getStartPos() + msg.getEndPos(), msg.getFileLen());
                         }

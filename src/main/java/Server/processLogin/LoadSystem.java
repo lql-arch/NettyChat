@@ -309,7 +309,7 @@ public class LoadSystem{
         int messages = 0;
         int hasRequest = 0;
 
-        ps = con.prepareStatement("select gid,last_msg_id from chat_group.group_user where uid = ?");
+        ps = con.prepareStatement("select gid,last_msg_id from chat_group.group_user where uid = ? ");
         ps.setObject(1,uid);
         rs = ps.executeQuery();
         while(rs.next()){
@@ -320,10 +320,14 @@ public class LoadSystem{
             group.setLast_msg_time(lastTime.toString());
             group.setGid(gid);
 
-            ps = con.prepareStatement("select group_name,create_time,members_num from chat_group.`group` where gid = ?");
+            ps = con.prepareStatement("select group_name,create_time,members_num,isRemoved from chat_group.`group` where gid = ?");
             ps.setObject(1,gid);
             ResultSet rs1 = ps.executeQuery();
             if(rs1.next()) {
+                boolean isRemoved = rs1.getBoolean("isRemoved");
+                if(isRemoved){
+                    continue;
+                }
                 group.setGroupName(rs1.getString("group_name"));
                 group.setTime(rs1.getTimestamp("create_time"));
                 group.setMembersNum(rs1.getInt("members_num"));
@@ -526,14 +530,14 @@ public class LoadSystem{
         }
 
         for(Map.Entry<String, Integer> level : groups.entrySet()){
-            ps = con.prepareStatement("select text,gid,time,uid from chat_group.group_msg where gid = ? and isNotice = true and (level <= ? or (uid = ? and level = 1)) and isRequest = ? order by id ;");
-            ps.setObject(1,level.getKey());
+            String gid = level.getKey();
+            ps = con.prepareStatement("select text,time,uid from chat_group.group_msg where gid = ? and isNotice = true and (level <= ? or (uid = ? and level = 1)) and isRequest = ? order by id ;");
+            ps.setObject(1,gid);
             ps.setObject(2,level.getValue());
             ps.setObject(3,msg.getUid());
             ps.setObject(4,isRequest);
             rs = ps.executeQuery();
             while (rs.next()){
-                String gid = rs.getString("gid");
 
                 GroupNoticeMessage.Notice notice = new GroupNoticeMessage.Notice();
                 notice.setNotice(rs.getString("text"));
